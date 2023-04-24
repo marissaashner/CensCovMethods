@@ -3,7 +3,7 @@
 #' Performs a complete case analysis using least squares for a regression model with censored covariates.
 #'
 #' @param formula a linear or nonlinear model formula including variables and parameters.
-#' @param D name of censoring indicator, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored.
+#' @param cens_ind name of censoring indicator, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored.
 #' @param data a data frame containing columns for the censoring indicator and the variables in the formula
 #' @param par_vec name of parameter vector in the formula
 #' @param starting_vals the starting values for the least squares algorithm. Must be a vector equal in length of the parameter vector
@@ -19,14 +19,15 @@
 #'
 #' @export
 cc_censored <- function(formula,
-                        D,
+                        cens_ind,
                         data,
                         par_vec,
                         starting_vals,
                         sandwich_se = TRUE){
 
   # subset to those that are not censored
-  data_cc <- data %>% filter(D == 1) %>% select(-D)
+  # change to more general D?
+  data_cc <- data %>% filter(.[[cens_ind]] == 1)
 
   # run nls
   start = list(temp = starting_vals)
@@ -39,7 +40,7 @@ cc_censored <- function(formula,
 
   # run sandwich estimator
   if(sandwich_se){
-    se_est = cc_sandwich(formula, data, D, par_vec, beta_est)
+    se_est = cc_sandwich(formula, data, cens_ind, par_vec, beta_est)
   }else{
     se_est = NULL
   }
@@ -51,7 +52,7 @@ cc_censored <- function(formula,
 
 cc_sandwich <- function(formula,
                         data,
-                        D,
+                        cens_ind,
                         par_vec,
                         beta_est){
 
@@ -81,12 +82,12 @@ cc_sandwich <- function(formula,
   }
 
   # create "g" function for the sandwich estimator
-  g = function(data, beta_est, m_func, par_vec, var_namesRHS, D){
+  g = function(data, beta_est, m_func, par_vec, var_namesRHS, cens_ind){
     do.call("<-", list(varNamesRHS, data[varNamesRHS]))
-    p = c(beta_est, get(varNamesRHS)) %>% unlist()
+    p = c(beta_est, lapply(varNamesRHS, get) %>% unlist()) %>% unlist()
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
-    rep(data[D], length(beta_est)) %>% as.numeric()*
+    rep(data[cens_ind], length(beta_est)) %>% as.numeric()*
       numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
       rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
   }
@@ -94,7 +95,7 @@ cc_sandwich <- function(formula,
   # take the inverse first derivative of g
   first_der <- apply(data, 1, function(temp){
     numDeriv::jacobian(func = g, x = beta_est, data = temp, m_func = m_func,
-                       par_vec = par_vec, var_namesRHS = var_namesRHS, D = D)
+                       par_vec = par_vec, var_namesRHS = var_namesRHS, cens_ind = cens_ind)
   })
   if(length(beta_est) > 1){
     first_der = first_der %>% rowMeans() %>% matrix(nrow = length(beta_est))
@@ -105,7 +106,7 @@ inv_first_der <- solve(first_der)
 
   # need to get the outer product of g at each observation and take the mean
   gs = apply(data, 1, function(temp)
-    g(temp, beta_est, m_func, par_vec, var_namesRHS, D))
+    g(temp, beta_est, m_func, par_vec, var_namesRHS, cens_ind))
   if(length(beta_est) > 1){
     outer_prod = apply(gs, 2, function(g) g%*%t(g))
     outer_prod = outer_prod %>% rowMeans() %>% matrix(nrow = length(beta_est))

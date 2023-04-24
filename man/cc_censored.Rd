@@ -4,12 +4,19 @@
 \alias{cc_censored}
 \title{Complete Case Analysis for Censored Covariates}
 \usage{
-cc_censored(formula, D, data, par_vec, starting_vals, sandwich_se = TRUE)
+cc_censored(
+  formula,
+  cens_ind,
+  data,
+  par_vec,
+  starting_vals,
+  sandwich_se = TRUE
+)
 }
 \arguments{
 \item{formula}{a linear or nonlinear model formula including variables and parameters.}
 
-\item{D}{name of censoring indicator, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored.}
+\item{cens_ind}{name of censoring indicator, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored.}
 
 \item{data}{a data frame containing columns for the censoring indicator and the variables in the formula}
 
