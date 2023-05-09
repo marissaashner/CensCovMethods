@@ -1,13 +1,16 @@
-#' Complete Case Analysis for Censored Covariates
+#' Inverse Probability Weighting for Censored Covariates
 #'
-#' Performs a complete case analysis using least squares for a regression model with censored covariates.
+#' Performs an inverse probability weighting estimation using least squares for a regression model with censored covariates.
 #'
-#' @param formula a linear or nonlinear model formula including variables and parameters.
-#' @param cens_ind name of censoring indicator, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored.
+#' @param formula a linear or nonlinear model formula including variables and parameters
 #' @param data a data frame containing columns for the censoring indicator and the variables in the formula
-#' @param par_vec name of parameter vector in the formula
+#' @param cens_ind a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored
+#' @param par_vec a character string indicating the parameter vector in the formula
 #' @param starting_vals the starting values for the least squares algorithm. Must be a vector equal in length of the parameter vector
-#' @param sandwich_se if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated.
+#' @param sandwich_se if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated
+#' @param weight_opt a character string indicating which method of weight calculation is to be done. One of "Cox", "AFT_lognormal", "MVN", "user" (if "user", then user provides weights)
+#' @param weights_user if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default)
+#' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}
 #'
 #' @return A list with the following elements:
 #' \item{beta_est}{a vector of the parameter estimates.}
@@ -18,15 +21,26 @@
 #' @import numDeriv
 #'
 #' @export
-cc_censored <- function(formula,
-                        cens_ind,
+ipw_censored <- function(formula,
                         data,
+                        cens_ind,
                         par_vec,
                         starting_vals,
-                        sandwich_se = TRUE){
+                        sandwich_se = TRUE,
+                        weight_opt,
+                        weights_user = NULL,
+                        weights_cov = NULL){
 
-  # subset to those that are not censored
-  data_cc <- data %>% filter(.[[cens_ind]] == 1)
+  # weights
+  if(weight_opt == "user"){
+    weights = weights_user
+  }else if(weight_opt == "Cox"){
+    weights = weights_cox()
+  }else if(weight_opt == "AFT_lognormal"){
+    weights = weights_aft()
+  }else if(weight_opt == "MVN"){
+    weights = weights_mvn()
+  }
 
   # run nls
   start = list(temp = starting_vals)
@@ -34,12 +48,13 @@ cc_censored <- function(formula,
   beta_est <- summary(nls(formula,
                           data = data_cc,
                           start = start,
+                          weights = get(cens_ind)*weights,
                           control = nls.control(minFactor = 1/5096,
                                                 warnOnly = TRUE)))$coeff[,1] %>% t() %>% as.data.frame()
 
   # run sandwich estimator
   if(sandwich_se){
-    se_est = cc_sandwich(formula, data, cens_ind, par_vec, beta_est)
+    se_est = ipw_sandwich(formula, data, cens_ind, par_vec, beta_est, weights)
   }else{
     se_est = NULL
   }
@@ -49,14 +64,18 @@ cc_censored <- function(formula,
               se_est = se_est))
 }
 
-cc_sandwich <- function(formula,
+ipw_sandwich <- function(formula,
                         data,
                         cens_ind,
                         par_vec,
-                        beta_est){
+                        beta_est,
+                        weights){
 
   #convert beta_est to numeric
   beta_est = beta_est %>% as.numeric()
+
+  # add weights to data frame
+  data$weights = weights
 
   # extract variable names from formula
   varNames = all.vars(formula)
@@ -86,7 +105,7 @@ cc_sandwich <- function(formula,
     p = c(beta_est, lapply(varNamesRHS, get) %>% unlist()) %>% unlist()
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
-    rep(data[cens_ind], length(beta_est)) %>% as.numeric()*
+    rep(data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
       numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
       rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
   }
@@ -97,12 +116,10 @@ cc_sandwich <- function(formula,
     p = c(beta_est, lapply(varNamesRHS, get) %>% unlist()) %>% unlist()
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
-    j = numDeriv::jacobian(m_func, p)[1:length(beta_est)]
-
-    rep(data[cens_ind], length(beta_est)) %>% as.numeric()*
+    rep(data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
       ((numDeriv::hessian(m_func, p)[1:length(beta_est), 1:length(beta_est)]*
-      rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()) -
-      outer(j,j)) %>% as.numeric()
+          rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()) -
+         outer(numDeriv::jacobian(m_func, p)[1:length(beta_est), 1:length(beta_est)])) %>% as.numeric()
   }
 
   # take the inverse first derivative of g
@@ -114,7 +131,7 @@ cc_sandwich <- function(formula,
   }else{
     first_der = first_der %>% mean()
   }
-inv_first_der <- solve(first_der)
+  inv_first_der <- solve(first_der)
 
   # need to get the outer product of g at each observation and take the mean
   gs = apply(data, 1, function(temp)
@@ -135,8 +152,16 @@ inv_first_der <- solve(first_der)
 }
 
 
+weights_cox <- function(){
 
+}
 
+weights_aft <- function(){
 
+}
+
+weights_mvn <- function(){
+
+}
 
 
