@@ -81,9 +81,8 @@ cc_sandwich <- function(formula,
   }
 
   # create "g" function for the sandwich estimator
-  g = function(data, beta_est, m_func, par_vec, var_namesRHS, cens_ind){
-    do.call("<-", list(varNamesRHS, data[varNamesRHS]))
-    p = c(beta_est, lapply(varNamesRHS, get) %>% unlist()) %>% unlist()
+  g = function(data, beta_est, m_func, par_vec, varNamesRHS, cens_ind){
+    p = c(beta_est, data[varNamesRHS])
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
     rep(data[cens_ind], length(beta_est)) %>% as.numeric()*
@@ -92,9 +91,8 @@ cc_sandwich <- function(formula,
   }
 
   # jacobian g function
-  g_jacobian = function(data, beta_est, m_func, par_vec, var_namesRHS, cens_ind){
-    do.call("<-", list(varNamesRHS, data[varNamesRHS]))
-    p = c(beta_est, lapply(varNamesRHS, get) %>% unlist()) %>% unlist()
+  g_jacobian = function(data, beta_est, m_func, par_vec, varNamesRHS, cens_ind){
+    p = c(beta_est, data[varNamesRHS])
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
     j = numDeriv::jacobian(m_func, p)[1:length(beta_est)]
@@ -107,7 +105,7 @@ cc_sandwich <- function(formula,
 
   # take the inverse first derivative of g
   first_der <- apply(data, 1, function(temp){
-    g_jacobian(temp, beta_est, m_func, par_vec, var_namesRHS, cens_ind)
+    g_jacobian(temp, beta_est, m_func, par_vec, varNamesRHS, cens_ind)
   })
   if(length(beta_est) > 1){
     first_der = first_der %>% rowMeans() %>% matrix(nrow = length(beta_est))
@@ -118,7 +116,7 @@ inv_first_der <- solve(first_der)
 
   # need to get the outer product of g at each observation and take the mean
   gs = apply(data, 1, function(temp)
-    g(temp, beta_est, m_func, par_vec, var_namesRHS, cens_ind))
+    g(temp, beta_est, m_func, par_vec, varNamesRHS, cens_ind))
   if(length(beta_est) > 1){
     outer_prod = apply(gs, 2, function(g) g%*%t(g))
     outer_prod = outer_prod %>% rowMeans() %>% matrix(nrow = length(beta_est))
