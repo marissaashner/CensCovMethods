@@ -92,10 +92,21 @@ cc_sandwich <- function(formula,
       rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
   }
 
+  # jacobian g function
+  g_jacobian = function(data, beta_est, m_func, par_vec, var_namesRHS, cens_ind){
+    do.call("<-", list(varNamesRHS, data[varNamesRHS]))
+    p = c(beta_est, lapply(varNamesRHS, get) %>% unlist()) %>% unlist()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
+
+    rep(data[cens_ind], length(beta_est)) %>% as.numeric()*
+      ((numDeriv::hessian(m_func, p)[1:length(beta_est), 1:length(beta_est)]*
+      rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()) -
+      outer(numDeriv::jacobian(m_func, p)[1:length(beta_est), 1:length(beta_est)])) %>% as.numeric()
+  }
+
   # take the inverse first derivative of g
   first_der <- apply(data, 1, function(temp){
-    numDeriv::jacobian(func = g, x = beta_est, data = temp, m_func = m_func,
-                       par_vec = par_vec, var_namesRHS = var_namesRHS, cens_ind = cens_ind)
+    g_jacobian(temp, beta_est, m_func, par_vec, var_namesRHS, cens_ind)
   })
   if(length(beta_est) > 1){
     first_der = first_der %>% rowMeans() %>% matrix(nrow = length(beta_est))
