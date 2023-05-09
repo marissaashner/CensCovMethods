@@ -25,6 +25,8 @@ cc_censored <- function(formula,
                         starting_vals,
                         sandwich_se = TRUE){
 
+  # Need to add error checks
+
   # subset to those that are not censored
   data_cc <- data %>% filter(.[[cens_ind]] == 1)
 
