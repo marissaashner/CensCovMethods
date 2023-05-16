@@ -107,8 +107,7 @@ ipw_sandwich <- function(formula,
 
   # create "g" function for the sandwich estimator
   g = function(data, beta_est, m_func, par_vec, var_namesRHS, cens_ind){
-    do.call("<-", list(varNamesRHS, data[varNamesRHS]))
-    p = c(beta_est, lapply(varNamesRHS, get) %>% unlist()) %>% unlist()
+    p = c(beta_est, data[varNamesRHS])
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
     rep(data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
@@ -118,8 +117,7 @@ ipw_sandwich <- function(formula,
 
   # jacobian g function
   g_jacobian = function(data, beta_est, m_func, par_vec, var_namesRHS, cens_ind){
-    do.call("<-", list(varNamesRHS, data[varNamesRHS]))
-    p = c(beta_est, lapply(varNamesRHS, get) %>% unlist()) %>% unlist()
+    p = c(beta_est, data[varNamesRHS])
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
     rep(data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
