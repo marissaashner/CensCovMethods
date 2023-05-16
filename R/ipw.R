@@ -166,10 +166,10 @@ weights_cox <- function(data, cens_ind, weights_cov, cens_name){
   G <- survival::survfit(cox_fit, newdata = data)
 
   ## get Ghat estimates for each W in the observed data and join with the original df
-  weights_data <- data.frame(W = summary(G, times = data[cens_name], extend = TRUE)$time,
-                           weights = 1/(summary(G, times = data[cens_name], extend = TRUE)$surv %>% diag()))
+  weights_data <- data.frame(W = summary(G, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
+                             weights = 1/(summary(G, times = data[cens_name] %>% unlist(), extend = TRUE)$surv %>% diag()))
   colnames(weights_data)[1] = cens_name
-  data <- data %>% left_join(weights_df, by = cens_name)
+  data <- data %>% left_join(weights_data, by = cens_name)
   return(data$weights)
 }
 
@@ -183,8 +183,10 @@ weights_aft <- function(data, cens_ind, weights_cov, cens_name){
   model_est_c_z_coeff = model_est_c_z$coefficients
   model_est_c_z_sd = model_est_c_z$scale
   Z = data %>% select(all_of(weights_cov)) %>% as.matrix()
-  weights = 1/pnorm(log(data[cens_name]), mean = Z %*% model_est_c_z_coeff, sd = model_est_c_z_sd,
-                  lower.tail = FALSE)
+  Z = cbind(rep(1, ncol(Z)), Z)
+  weights = 1/pnorm(log(data[cens_name] %>% unlist()), mean = Z %*% model_est_c_z_coeff,
+                    sd = model_est_c_z_sd,
+                    lower.tail = FALSE)
   return(weights)
 }
 
@@ -215,6 +217,7 @@ weights_mvn <- function(data, cens_ind, weights_cov, cens_name){
   return(weights)
 }
 
+# want to make warnings go away on the MVN part
 
 # helper functions for the MVN weights function
 l = function(params, W, Z, D){
