@@ -36,6 +36,8 @@ ipw_censored <- function(formula,
 
   # Need to add error checks
 
+  # add thresholding options
+
   # weights
   if(weight_opt == "user"){
     weights = weights_user
@@ -159,7 +161,7 @@ ipw_sandwich <- function(formula,
 
 }
 
-
+# weighting options
 weights_cox <- function(data, cens_ind, weights_cov, cens_name){
   cox_formula <- as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~",
                                   paste(colnames(data %>% select(all_of(weights_cov))),
