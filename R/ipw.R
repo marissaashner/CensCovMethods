@@ -50,11 +50,12 @@ ipw_censored <- function(formula,
   # run nls
   start = list(temp = starting_vals)
   names(start) = par_vec
-  D = data[cens_ind]
+  #data$D = data[cens_ind]
+  #data$weights = weights
   beta_est <- summary(nls(formula,
                           data = data,
                           start = start,
-                          weights = D*weights,
+                          weights = get(cens_ind)*weights,
                           control = nls.control(minFactor = 1/5096,
                                                 warnOnly = TRUE)))$coeff[,1] %>% t() %>% as.data.frame()
 
