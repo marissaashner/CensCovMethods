@@ -50,18 +50,19 @@ ipw_censored <- function(formula,
   # run nls
   start = list(temp = starting_vals)
   names(start) = par_vec
+  data$nls_weights = (data[cens_ind] %>% unlist)*weight_vec
   #data$D = data[cens_ind]
   #data$weights = weights
   beta_est <- summary(nls(formula,
                           data = data,
                           start = start,
-                          weights = get(cens_ind)*weights,
+                          weights = nls_weights,
                           control = nls.control(minFactor = 1/5096,
                                                 warnOnly = TRUE)))$coeff[,1] %>% t() %>% as.data.frame()
 
   # run sandwich estimator
   if(sandwich_se){
-    se_est = ipw_sandwich(formula, data, cens_ind, par_vec, beta_est, weights)
+    se_est = ipw_sandwich(formula, data, cens_ind, par_vec, beta_est, weight_vec)
   }else{
     se_est = NULL
   }
