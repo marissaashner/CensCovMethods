@@ -3,4 +3,5 @@
 export(cc_censored)
 export(ipw_censored)
 import(numDeriv)
+import(survival)
 import(tidyverse)

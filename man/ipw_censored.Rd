@@ -8,6 +8,7 @@ ipw_censored(
   formula,
   data,
   cens_ind,
+  cens_name,
   par_vec,
   starting_vals,
   sandwich_se = TRUE,
@@ -22,6 +23,8 @@ ipw_censored(
 \item{data}{a data frame containing columns for the censoring indicator and the variables in the formula}
 
 \item{cens_ind}{a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored}
+
+\item{cens_name}{a character string indicating the name of censored covariate from \code{data}}
 
 \item{par_vec}{a character string indicating the parameter vector in the formula}
 
