@@ -38,6 +38,8 @@ aipw_censored <- function(formula,
 
   # add thresholding options
 
+  print("TEST0")
+
   # weights
   if(weight_opt == "user"){
     weights = weights_user
@@ -46,7 +48,9 @@ aipw_censored <- function(formula,
   }else if(weight_opt == "AFT_lognormal"){
     weights = weights_aft(data, cens_ind, weights_cov, cens_name)
   }else if(weight_opt == "MVN"){
+    print("TEST_MVN")
     mvn_results = weights_mvn(data, cens_ind, weights_cov, cens_name)
+    print(mvn_results)
     weights = mvn_results$weights
     mu_joint = mvn_results$mu_joint
     Sigma_joint = mvn_results$Sigma_joint
