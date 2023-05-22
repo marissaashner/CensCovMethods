@@ -32,7 +32,7 @@ weights_aft <- function(data, cens_ind, weights_cov, cens_name){
   return(weights)
 }
 
-weights_mvn <- function(data, cens_ind, weights_cov, cens_name){
+weights_mvn_2 <- function(data, cens_ind, weights_cov, cens_name){
   l_all = function(params, data){
     -(apply(data, 1, function(dat)
       l(params, log(dat[cens_name]), dat[weights_cov], dat[cens_ind])) %>% sum())

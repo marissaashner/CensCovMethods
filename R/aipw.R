@@ -46,7 +46,7 @@ aipw_censored <- function(formula,
   }else if(weight_opt == "AFT_lognormal"){
     weights = weights_aft(data, cens_ind, weights_cov, cens_name)
   }else if(weight_opt == "MVN"){
-    mvn_results = weights_mvn(data, cens_ind, weights_cov, cens_name)
+    mvn_results = weights_mvn_2(data, cens_ind, weights_cov, cens_name)
     print(mvn_results)
     weights = mvn_results$weights
     mu_joint = mvn_results$mu_joint
