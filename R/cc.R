@@ -11,6 +11,7 @@
 #'
 #' @return A list with the following elements:
 #' \item{beta_est}{a vector of the parameter estimates.}
+#' \item{sigma_est}{the square root of the estimated variance of the random error.}
 #' \item{se_est}{if \code{sandwich_se = TRUE}, a vector of standard error estimates from the empirical sandwich estimator. Otherwise, \code{NULL}}
 #'
 #'
@@ -33,11 +34,13 @@ cc_censored <- function(formula,
   # run nls
   start = list(temp = starting_vals)
   names(start) = par_vec
-  beta_est <- summary(nls(formula,
+  model_est <- summary(nls(formula,
                           data = data_cc,
                           start = start,
                           control = nls.control(minFactor = 1/5096,
-                                                warnOnly = TRUE)))$coeff[,1] %>% t() %>% as.data.frame()
+                                                warnOnly = TRUE)))
+  beta_est = model_est$coeff[,1] %>% t() %>% as.data.frame()
+  sigma_est = model_est$sigma
 
   # run sandwich estimator
   if(sandwich_se){
@@ -48,6 +51,7 @@ cc_censored <- function(formula,
 
   # save beta estimates
   return(list(beta_est = beta_est,
+              sigma_est = sigma_est,
               se_est = se_est))
 }
 

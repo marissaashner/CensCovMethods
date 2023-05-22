@@ -29,6 +29,7 @@ cc_censored(
 \value{
 A list with the following elements:
 \item{beta_est}{a vector of the parameter estimates.}
+\item{sigma_est}{the square root of the estimated variance of the random error.}
 \item{se_est}{if \code{sandwich_se = TRUE}, a vector of standard error estimates from the empirical sandwich estimator. Otherwise, \code{NULL}}
 }
 \description{

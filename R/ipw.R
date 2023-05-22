@@ -1,6 +1,6 @@
 #' Inverse Probability Weighting for Censored Covariates
 #'
-#' Performs an inverse probability weighting estimation using least squares for a regression model with censored covariates.
+#' Performs an inverse probability weighting estimation using weighted least squares for a regression model with censored covariates.
 #'
 #' @param formula a linear or nonlinear model formula including variables and parameters
 #' @param data a data frame containing columns for the censoring indicator and the variables in the formula
