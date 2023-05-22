@@ -46,19 +46,14 @@ aipw_censored <- function(formula,
   }else if(weight_opt == "AFT_lognormal"){
     weights = weights_aft(data, cens_ind, weights_cov, cens_name)
   }else if(weight_opt == "MVN"){
-    mvn_results = weights_mvn_2(data, cens_ind, weights_cov, cens_name)
-    print(mvn_results)
+    mvn_results = weights_mvn(data, cens_ind, weights_cov, cens_name)
     weights = mvn_results$weights
     mu_joint = mvn_results$mu_joint
     Sigma_joint = mvn_results$Sigma_joint
   }
 
-  print("TEST1")
-
   # add weights to data frame
   data$weights = weights
-
-  print("TEST2")
 
   # extract variable names from formula
   varNames = all.vars(formula)
@@ -78,8 +73,6 @@ aipw_censored <- function(formula,
          eval(exp_nobracket))
   }
 
-  print("TEST3")
-
   # Note: the A function is as follows
   # set p --- p = c(beta_temp, data[varNamesRHS])
   # set names for p ---- names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
@@ -90,8 +83,6 @@ aipw_censored <- function(formula,
                              sandwich_se = FALSE)
   starting_vals = model_est_cc$beta_est %>% as.numeric()
   sigma2 = model_est_cc$sigma_est
-
-  print("TEST4")
 
   # set up multiroot function (the estimating equation we want to find the root of)
   multiroot_func = function(beta_temp, data,
@@ -113,8 +104,6 @@ aipw_censored <- function(formula,
     rowSums(pieces)
   }
 
-  print("TEST5")
-
   beta_est = rootSolve::multiroot(multiroot_func,
                                   data = data,
                                   Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
@@ -123,8 +112,6 @@ aipw_censored <- function(formula,
                                   integral_func_denom = integral_func_denom,
                                   mu_joint = mu_joint, Sigma_joint = Sigma_joint, sigma2 = sigma2,
                                   start = starting_vals)$root
-
-  print("TEST6")
 
   # run sandwich estimator (fix this)
   if(sandwich_se){
