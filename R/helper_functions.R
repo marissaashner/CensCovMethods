@@ -50,13 +50,21 @@ weights_mvn <- function(data, cens_ind, weights_cov, cens_name){
                           params[8], params[9], params[6]),
                         nrow = 3))
 
+  print("TEST1")
+
   weights = 1/apply(data, 1, function(dat_row)
     condMVNorm::pcmvnorm(lower = log(dat_row[cens_name]), upper = Inf,
                          mean = mu_joint, sigma = Sigma_joint,
                          dependent.ind = 2,
                          given = c(1,3),
                          X.given = c(log(dat_row[cens_name]), dat_row[weights_cov])))
-  return(list(weights = weights, mu_joint = mu_joint, Sigma_joint = Sigma_joint))
+
+  print("TEST2")
+
+  return_list = list(weights = weights, mu_joint = mu_joint, Sigma_joint = Sigma_joint)
+  print(return_list)
+
+  return(return_list)
 }
 
 # want to make warnings go away on the MVN part
