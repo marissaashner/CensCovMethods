@@ -1,4 +1,4 @@
-#' Augmented Inverse Probability Weighting for Censored Covariates
+#' MLE for Censored Covariates
 #'
 #' Performs an augmented inverse probability weighting estimation for a regression model with censored covariates.
 #'
@@ -9,9 +9,6 @@
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param starting_vals the starting values for the least squares algorithm. Must be a vector equal in length of the parameter vector
 #' @param sandwich_se if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated
-#' @param weight_opt a character string indicating which method of weight calculation is to be done. One of "Cox", "AFT_lognormal", "MVN", "user" (if "user", then user provides weights)
-#' @param weights_user if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default)
-#' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}
 #'
 #' @return A list with the following elements:
 #' \item{beta_est}{a vector of the parameter estimates.}
@@ -23,37 +20,15 @@
 #' @import survival
 #'
 #' @export
-aipw_censored <- function(formula,
-                         data,
-                         cens_ind,
-                         cens_name,
-                         par_vec,
-                         starting_vals,
-                         sandwich_se = TRUE,
-                         weight_opt,
-                         weights_user = NULL,
-                         weights_cov = NULL){
+mle_censored <- function(formula,
+                          data,
+                          cens_ind,
+                          cens_name,
+                          par_vec,
+                          starting_vals,
+                          sandwich_se = TRUE){
 
   # Need to add error checks
-
-  # add thresholding options
-
-  # weights
-  if(weight_opt == "user"){
-    weights = weights_user
-  }else if(weight_opt == "Cox"){
-    weights = weights_cox(data, cens_ind, weights_cov, cens_name)
-  }else if(weight_opt == "AFT_lognormal"){
-    weights = weights_aft(data, cens_ind, weights_cov, cens_name)
-  }else if(weight_opt == "MVN"){
-    mvn_results = weights_mvn(data, cens_ind, weights_cov, cens_name)
-    weights = mvn_results$weights
-    mu_joint = mvn_results$mu_joint
-    Sigma_joint = mvn_results$Sigma_joint
-  }
-
-  # add weights to data frame
-  data$weights = weights
 
   # extract variable names from formula
   varNames = all.vars(formula)
@@ -86,20 +61,20 @@ aipw_censored <- function(formula,
 
   # set up multiroot function (the estimating equation we want to find the root of)
   multiroot_func = function(beta_temp, data,
-                            Y, varNamesRHS, par_vec, cens_name, weights_cov, cens_ind,
-                            m_func, integral_func_psi,
-                            integral_func_denom, mu_joint, Sigma_joint, sigma2){
+                            Y, varNamesRHS, par_vec, cens_name, cens_ind,
+                            m_func, mu_joint, Sigma_joint, sigma2){
     pieces = apply(data, 1, function(temp){
       p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
       names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
-      ipw_piece = rep(temp[cens_ind]*temp["weights"], length(beta_temp))*
+      if(temp[cens_ind] == 1){
+        print("1")
         numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
-        rep(temp[Y]-m_func(p), length(beta_temp))
-      aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
-        psi_hat_i(temp, Y, varNamesRHS, par_vec, cens_name, weights_cov,
-                  beta_temp, m_func, integral_func_psi,
-                  integral_func_denom, mu_joint, Sigma_joint, sigma2)
-      ipw_piece + aipw_piece
+          rep(temp[Y]-m_func(p), length(beta_temp))
+      }else{
+        print("0")
+        psi_hat_i_mle(temp, Y, varNamesRHS, par_vec, cens_name,
+                  beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
+      }
     }) %>% unname()
     rowSums(pieces)
   }
@@ -107,16 +82,15 @@ aipw_censored <- function(formula,
   beta_est = rootSolve::multiroot(multiroot_func,
                                   data = data,
                                   Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
-                                  cens_name = cens_name, weights_cov = weights_cov, cens_ind = cens_ind,
-                                  m_func = m_func, integral_func_psi = integral_func_psi,
-                                  integral_func_denom = integral_func_denom,
-                                  mu_joint = mu_joint, Sigma_joint = Sigma_joint, sigma2 = sigma2,
+                                  cens_name = cens_name, cens_ind = cens_ind,
+                                  m_func = m_func, mu_joint = mu_joint,
+                                  Sigma_joint = Sigma_joint, sigma2 = sigma2,
                                   start = starting_vals)$root
   names(beta_est) = paste0(par_vec, seq(1:length(beta_est)))
 
   # run sandwich estimator
   if(sandwich_se){
-    se_est = aipw_sandwich(formula, data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
+    se_est = mle_sandwich(formula, data, Y, varNamesRHS, par_vec, cens_name,
                            beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
   }else{
     se_est = NULL
@@ -127,7 +101,7 @@ aipw_censored <- function(formula,
               se_est = se_est))
 }
 
-aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
+mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name,
                           beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2){
 
   #convert beta_est to numeric
@@ -161,22 +135,20 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, wei
     p = c(beta_est, data[varNamesRHS])
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
-    ipw_piece = rep(data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
+    if(data[cens_ind] == 1){
       numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
-      rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
-    aipw_piece = rep(1 - data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
-      psi_hat_i(data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
-                beta_est, m_func, integral_func_psi,
-                integral_func_denom, mu_joint, Sigma_joint, sigma2)
-
-    ipw_piece + aipw_piece
+        rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
+    }else{
+      psi_hat_i_mle(data, Y, varNamesRHS, par_vec, cens_name,
+                beta_est, m_func, mu_joint, Sigma_joint, sigma2)
+    }
   }
 
   # first derivative function
   # calculates first derivative for subject i (data x)
   # f(x;beta) where beta is of length lb, x is a scalar
   # first derivative = ( f(beta+ delta) - f(beta-delta) )/ (2 * delta)
-  firstderivative <- function(beta, g, data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
+  firstderivative <- function(beta, g, data, Y, varNamesRHS, par_vec, cens_name,
                               m_func, cens_ind, mu_joint, Sigma_joint, sigma2){
     lb <- length(beta)
     derivs <- matrix(data = 0, nrow = lb, ncol = lb)
@@ -188,9 +160,9 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, wei
       betar[i] <- beta[i] + delta[i]
 
       # Calculate function values
-      yout1 <- g(data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
+      yout1 <- g(data, Y, varNamesRHS, par_vec, cens_name,
                  betal, m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
-      yout2 <- g(data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
+      yout2 <- g(data, Y, varNamesRHS, par_vec, cens_name,
                  betar, m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
 
       # Calculate derivative and save in vector A
@@ -205,7 +177,7 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, wei
 
   # take the inverse first derivative of g
   first_der <- apply(data, 1, function(temp){
-    firstderivative(beta_est, g, temp, Y, varNamesRHS, par_vec, cens_name, weights_cov,
+    firstderivative(beta_est, g, temp, Y, varNamesRHS, par_vec, cens_name,
                     m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
   })
   if(length(beta_est) > 1){
@@ -217,7 +189,7 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, wei
 
   # need to get the outer product of g at each observation and take the mean
   gs = apply(data, 1, function(temp)
-    g(temp, Y, varNamesRHS, par_vec, cens_name, weights_cov,
+    g(temp, Y, varNamesRHS, par_vec, cens_name,
       beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2))
   if(length(beta_est) > 1){
     outer_prod = apply(gs, 2, function(g) g%*%t(g))
@@ -233,6 +205,3 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, wei
   return(se)
 
 }
-
-
-
