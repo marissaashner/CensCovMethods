@@ -73,7 +73,7 @@ mle_censored <- function(formula,
 
   # set up multiroot function (the estimating equation we want to find the root of)
   multiroot_func = function(beta_temp, data,
-                            Y, varNamesRHS, par_vec, cens_name, cens_ind,
+                            Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
                             m_func, mu_joint, Sigma_joint, sigma2){
     pieces = apply(data, 1, function(temp){
       p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
@@ -84,7 +84,7 @@ mle_censored <- function(formula,
           rep(temp[Y]-m_func(p), length(beta_temp))
       }else{
         print("0")
-        psi_hat_i_mle(temp, Y, varNamesRHS, par_vec, cens_name,
+        psi_hat_i_mle(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                   beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
       }
     }) %>% unname()
@@ -94,7 +94,8 @@ mle_censored <- function(formula,
   beta_est = rootSolve::multiroot(multiroot_func,
                                   data = data,
                                   Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
-                                  cens_name = cens_name, cens_ind = cens_ind,
+                                  cens_name = cens_name, cov_vars = cov_vars,
+                                  cens_ind = cens_ind,
                                   m_func = m_func, mu_joint = mu_joint,
                                   Sigma_joint = Sigma_joint, sigma2 = sigma2,
                                   start = starting_vals)$root
