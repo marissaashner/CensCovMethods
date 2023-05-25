@@ -79,14 +79,14 @@ mle_censored <- function(formula,
       p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
       names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
       if(temp[cens_ind] == 1){
-        print("1")
-        numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
+        piece = numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
           rep(temp[Y]-m_func(p), length(beta_temp))
       }else{
-        print("0")
-        psi_hat_i_mle(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+        piece = psi_hat_i_mle(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                   beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
       }
+      print(piece)
+      piece
     }) %>% unname()
     rowSums(pieces)
   }
