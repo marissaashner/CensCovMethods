@@ -3,6 +3,7 @@
 export(aipw_censored)
 export(cc_censored)
 export(ipw_censored)
+export(mle_censored)
 import(numDeriv)
 import(survival)
 import(tidyverse)
