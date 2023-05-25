@@ -126,7 +126,7 @@ psi_hat_i <- function(data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
                            rel.tol = .Machine$double.eps^0.1,
                            subdivisions = 1000)$value
   if(abs(denominator) < 10e-4){
-    psi = 0
+    psi = rep(0, length(beta_temp))
   }else{
     numerator = lapply(1:length(beta_temp), function(j) {
       integrate(integral_func_psi, 0, Inf, data_row = data, Y = Y,
@@ -204,7 +204,7 @@ psi_hat_i_mle <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                            rel.tol = .Machine$double.eps^0.1,
                            subdivisions = 1000)$value
   if(abs(denominator) < 10e-4){
-    psi = 0
+    psi = rep(0, length(beta_temp))
   }else{
     numerator = lapply(1:length(beta_temp), function(j) {
       integrate(integral_func_psi_mle, data[cens_name] %>% as.numeric(),
