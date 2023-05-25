@@ -9,6 +9,9 @@
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param starting_vals the starting values for the least squares algorithm. Must be a vector equal in length of the parameter vector
 #' @param sandwich_se if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated
+#' @param cov_dist_opt a character string indicating which method of covariate distribution is to be done. One of "MVN"
+#' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}
+#'
 #'
 #' @return A list with the following elements:
 #' \item{beta_est}{a vector of the parameter estimates.}
@@ -26,9 +29,18 @@ mle_censored <- function(formula,
                           cens_name,
                           par_vec,
                           starting_vals,
-                          sandwich_se = TRUE){
+                          sandwich_se = TRUE,
+                         cov_dist_opt = "MVN",
+                         cov_vars){
 
   # Need to add error checks
+
+  # covariate distribution
+  if(cov_dist_opt == "MVN"){
+    mvn_results = weights_mvn(data, cens_ind, cov_vars, cens_name)
+    mu_joint = mvn_results$mu_joint
+    Sigma_joint = mvn_results$Sigma_joint
+  }
 
   # extract variable names from formula
   varNames = all.vars(formula)

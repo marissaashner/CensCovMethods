@@ -11,7 +11,9 @@ mle_censored(
   cens_name,
   par_vec,
   starting_vals,
-  sandwich_se = TRUE
+  sandwich_se = TRUE,
+  cov_dist_opt = "MVN",
+  cov_vars
 )
 }
 \arguments{
@@ -28,6 +30,10 @@ mle_censored(
 \item{starting_vals}{the starting values for the least squares algorithm. Must be a vector equal in length of the parameter vector}
 
 \item{sandwich_se}{if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated}
+
+\item{cov_dist_opt}{a character string indicating which method of covariate distribution is to be done. One of "MVN"}
+
+\item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}}
 }
 \value{
 A list with the following elements:
