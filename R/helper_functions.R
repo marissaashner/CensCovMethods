@@ -138,8 +138,8 @@ psi_hat_i <- function(data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
                 rel.tol = .Machine$double.eps^0.1,
                 subdivisions = 1000)$value
     }) %>% unlist() %>% as.numeric()
+    psi = numerator/denominator
   }
-  psi = numerator/denominator
   #print(beta_temp)
   psi
 }
@@ -218,8 +218,8 @@ psi_hat_i_mle <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                 rel.tol = .Machine$double.eps^0.1,
                 subdivisions = 1000)$value
     }) %>% unlist() %>% as.numeric()
+    psi = numerator/denominator
   }
-  psi = numerator/denominator
   #print(beta_temp)
   psi
 }
