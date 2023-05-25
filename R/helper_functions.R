@@ -193,10 +193,12 @@ integral_func_psi <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, w
 
 psi_hat_i_mle <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                       beta_temp, m_func, mu_joint, Sigma_joint, sigma2){
-  denominator =  integrate(integral_func_denom_mle, data[cens_name], Inf, data_row = data, Y = Y,
+  denominator =  integrate(integral_func_denom_mle, data[cens_name] %>% as.numeric(),
+                           Inf, data_row = data, Y = Y,
                            varNamesRHS = varNamesRHS, par_vec = par_vec,
                            cens_name = cens_name, cov_vars = cov_vars,
-                           beta_temp = beta_temp, m_func = m_func, C_val = data[cens_name],
+                           beta_temp = beta_temp, m_func = m_func,
+                           C_val = data[cens_name]  %>% as.numeric(),
                            mu_joint = mu_joint, Sigma_joint = Sigma_joint,
                            sigma2 = sigma2,
                            rel.tol = .Machine$double.eps^0.1,
@@ -205,10 +207,12 @@ psi_hat_i_mle <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
     psi = 0
   }else{
     numerator = lapply(1:length(beta_temp), function(j) {
-      integrate(integral_func_psi_mle, data[cens_name], Inf, data_row = data, Y = Y,
+      integrate(integral_func_psi_mle, data[cens_name] %>% as.numeric(),
+                Inf, data_row = data, Y = Y,
                 varNamesRHS = varNamesRHS, par_vec = par_vec,
                 cens_name = cens_name, cov_vars = cov_vars,
-                beta_temp = beta_temp, m_func = m_func, C_val = data[cens_name],
+                beta_temp = beta_temp, m_func = m_func,
+                C_val = data[cens_name]  %>% as.numeric(),
                 mu_joint = mu_joint, Sigma_joint = Sigma_joint,
                 sigma2 = sigma2, j = j,
                 rel.tol = .Machine$double.eps^0.1,
