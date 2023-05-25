@@ -102,7 +102,7 @@ mle_censored <- function(formula,
 
   # run sandwich estimator
   if(sandwich_se){
-    se_est = mle_sandwich(formula, data, Y, varNamesRHS, par_vec, cens_name,
+    se_est = mle_sandwich(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                            beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
   }else{
     se_est = NULL
@@ -113,7 +113,7 @@ mle_censored <- function(formula,
               se_est = se_est))
 }
 
-mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name,
+mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                           beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2){
 
   #convert beta_est to numeric
@@ -142,7 +142,7 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name,
   }
 
   # create "g" function for the sandwich estimator
-  g = function(data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
+  g = function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2){
     p = c(beta_est, data[varNamesRHS])
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
@@ -151,7 +151,7 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name,
       numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
         rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
     }else{
-      psi_hat_i_mle(data, Y, varNamesRHS, par_vec, cens_name,
+      psi_hat_i_mle(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                 beta_est, m_func, mu_joint, Sigma_joint, sigma2)
     }
   }
@@ -160,7 +160,7 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name,
   # calculates first derivative for subject i (data x)
   # f(x;beta) where beta is of length lb, x is a scalar
   # first derivative = ( f(beta+ delta) - f(beta-delta) )/ (2 * delta)
-  firstderivative <- function(beta, g, data, Y, varNamesRHS, par_vec, cens_name,
+  firstderivative <- function(beta, g, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                               m_func, cens_ind, mu_joint, Sigma_joint, sigma2){
     lb <- length(beta)
     derivs <- matrix(data = 0, nrow = lb, ncol = lb)
@@ -172,9 +172,9 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name,
       betar[i] <- beta[i] + delta[i]
 
       # Calculate function values
-      yout1 <- g(data, Y, varNamesRHS, par_vec, cens_name,
+      yout1 <- g(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                  betal, m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
-      yout2 <- g(data, Y, varNamesRHS, par_vec, cens_name,
+      yout2 <- g(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                  betar, m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
 
       # Calculate derivative and save in vector A
@@ -189,7 +189,7 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name,
 
   # take the inverse first derivative of g
   first_der <- apply(data, 1, function(temp){
-    firstderivative(beta_est, g, temp, Y, varNamesRHS, par_vec, cens_name,
+    firstderivative(beta_est, g, temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                     m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
   })
   if(length(beta_est) > 1){
@@ -201,7 +201,7 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name,
 
   # need to get the outer product of g at each observation and take the mean
   gs = apply(data, 1, function(temp)
-    g(temp, Y, varNamesRHS, par_vec, cens_name,
+    g(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
       beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2))
   if(length(beta_est) > 1){
     outer_prod = apply(gs, 2, function(g) g%*%t(g))
