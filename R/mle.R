@@ -85,7 +85,7 @@ mle_censored <- function(formula,
         piece = psi_hat_i_mle(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                   beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
       }
-      print(piece)
+     # print(piece)
       piece
     }) %>% unname()
     rowSums(pieces)
