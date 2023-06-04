@@ -14,7 +14,12 @@ aipw_censored(
   sandwich_se = TRUE,
   weight_opt,
   weights_user = NULL,
-  weights_cov = NULL
+  weights_cov = NULL,
+  cov_dist_opt = "MVN",
+  cov_vars,
+  cov_mean_user = NULL,
+  cov_sigma_user = NULL,
+  ...
 )
 }
 \arguments{
@@ -32,11 +37,21 @@ aipw_censored(
 
 \item{sandwich_se}{if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated}
 
-\item{weight_opt}{a character string indicating which method of weight calculation is to be done. One of "Cox", "AFT_lognormal", "MVN", "user" (if "user", then user provides weights)}
+\item{weight_opt}{a character string indicating the method of weight calculation. One of "Cox", "AFT_lognormal", "MVN", "user" (if "user", then user provides weights).}
 
-\item{weights_user}{if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default)}
+\item{weights_user}{if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default).}
 
-\item{weights_cov}{if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}}
+\item{weights_cov}{if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.}
+
+\item{cov_dist_opt}{a character string indicating specification of the covariate distribution. One of "MVN", "user MVN"}
+
+\item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.}
+
+\item{cov_mean_user}{if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.}
+
+\item{cov_sigma_user}{if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.}
+
+\item{...}{additional arguments passed to function \code{multiroot}.}
 }
 \value{
 A list with the following elements:

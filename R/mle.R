@@ -11,7 +11,9 @@
 #' @param sandwich_se if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated
 #' @param cov_dist_opt a character string indicating which method of covariate distribution is to be done. One of "MVN"
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}
-#'
+#' @param cov_mean_user if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}
+#' @param cov_sigma_user if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distributionof \code{(log(X), log(C), Z)}
+#' @param ... additional arguments passed to function \code{multiroot}.
 #'
 #' @return A list with the following elements:
 #' \item{beta_est}{a vector of the parameter estimates.}
@@ -31,7 +33,10 @@ mle_censored <- function(formula,
                           starting_vals,
                           sandwich_se = TRUE,
                          cov_dist_opt = "MVN",
-                         cov_vars){
+                         cov_vars,
+                         cov_mean_user = NULL,
+                         cov_sigma_user = NULL,
+                         ...){
 
   # Need to add error checks
 
@@ -40,6 +45,9 @@ mle_censored <- function(formula,
     mvn_results = weights_mvn(data, cens_ind, cov_vars, cens_name)
     mu_joint = mvn_results$mu_joint
     Sigma_joint = mvn_results$Sigma_joint
+  }else if(cov_dist_opt == "user MVN"){
+    mu_joint = cov_mean_user
+    Sigma_joint = cov_sigma_user
   }
 
   # extract variable names from formula

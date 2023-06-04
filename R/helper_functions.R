@@ -114,12 +114,12 @@ cond_normal_params = function(mu, sigma, dependent.ind, X.given){
 ##### helper functions for AIPW #####
 #####################################
 
-psi_hat_i <- function(data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
+psi_hat_i <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                       beta_temp, m_func, integral_func_psi,
                       integral_func_denom, mu_joint, Sigma_joint, sigma2){
   denominator =  integrate(integral_func_denom, 0, Inf, data_row = data, Y = Y,
                            varNamesRHS = varNamesRHS, par_vec = par_vec,
-                           cens_name = cens_name, weights_cov = weights_cov,
+                           cens_name = cens_name, cov_vars = cov_vars,
                            beta_temp = beta_temp, m_func = m_func,
                            mu_joint = mu_joint, Sigma_joint = Sigma_joint,
                            sigma2 = sigma2,
@@ -131,7 +131,7 @@ psi_hat_i <- function(data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
     numerator = lapply(1:length(beta_temp), function(j) {
       integrate(integral_func_psi, 0, Inf, data_row = data, Y = Y,
                 varNamesRHS = varNamesRHS, par_vec = par_vec,
-                cens_name = cens_name, weights_cov = weights_cov,
+                cens_name = cens_name, cov_vars = cov_vars,
                 beta_temp = beta_temp, m_func = m_func,
                 mu_joint = mu_joint, Sigma_joint = Sigma_joint,
                 sigma2 = sigma2, j = j,
@@ -144,7 +144,7 @@ psi_hat_i <- function(data, Y, varNamesRHS, par_vec, cens_name, weights_cov,
   psi
 }
 
-integral_func_denom <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, weights_cov,
+integral_func_denom <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                                 beta_temp, m_func,
                                 mu_joint, Sigma_joint, sigma2){
   value_ts = vector("numeric", length(t))
@@ -159,13 +159,13 @@ integral_func_denom <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name,
                                  sigma = Sigma_joint,
                                  dependent.ind = 1,
                                  given.ind = c(3),
-                                 X.given = c(data_row[weights_cov] %>% as.numeric()))
+                                 X.given = c(data_row[cov_vars] %>% as.numeric()))
     value_ts[i] = f_y*f_x_z/t[i]
   }
   value_ts
 }
 
-integral_func_psi <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, weights_cov,
+integral_func_psi <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                               beta_temp, m_func,
                               mu_joint, Sigma_joint, j, sigma2){
   value_ts = vector("numeric", length(t))
@@ -180,7 +180,7 @@ integral_func_psi <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, w
                                  sigma = Sigma_joint,
                                  dependent.ind = 1,
                                  given.ind = c(3),
-                                 X.given = c(data_row[weights_cov] %>% as.numeric()))
+                                 X.given = c(data_row[cov_vars] %>% as.numeric()))
     value_ts[i] =
       numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z/t[i]
   }

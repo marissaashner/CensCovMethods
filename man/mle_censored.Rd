@@ -13,7 +13,10 @@ mle_censored(
   starting_vals,
   sandwich_se = TRUE,
   cov_dist_opt = "MVN",
-  cov_vars
+  cov_vars,
+  cov_mean_user = NULL,
+  cov_sigma_user = NULL,
+  ...
 )
 }
 \arguments{
@@ -34,6 +37,12 @@ mle_censored(
 \item{cov_dist_opt}{a character string indicating which method of covariate distribution is to be done. One of "MVN"}
 
 \item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}}
+
+\item{cov_mean_user}{if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}}
+
+\item{cov_sigma_user}{if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distributionof \code{(log(X), log(C), Z)}}
+
+\item{...}{additional arguments passed to function \code{multiroot}.}
 }
 \value{
 A list with the following elements:
