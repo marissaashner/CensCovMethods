@@ -34,13 +34,14 @@ cc_censored <- function(formula,
   # run nls
   start = list(temp = starting_vals)
   names(start) = par_vec
-  model_est <- summary(nls(formula,
+  model_est <- nls(formula,
                           data = data_cc,
                           start = start,
                           control = nls.control(minFactor = 1/5096,
-                                                warnOnly = TRUE)))
-  beta_est = model_est$coeff[,1] %>% t() %>% as.data.frame()
-  sigma_est = model_est$sigma
+                                                warnOnly = TRUE))
+  beta_est = summary(model_est)$coeff[,1] %>% t() %>% as.data.frame()
+  sigma_est = summary(model_est)$sigma
+  iteration_count = model_est$convInfo$finIter
 
   # run sandwich estimator
   if(sandwich_se){
@@ -52,7 +53,8 @@ cc_censored <- function(formula,
   # save beta estimates
   return(list(beta_est = beta_est,
               sigma_est = sigma_est,
-              se_est = se_est))
+              se_est = se_est,
+              iteration_count = iteration_count))
 }
 
 cc_sandwich <- function(formula,

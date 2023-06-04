@@ -18,11 +18,12 @@
 #' @return A list with the following elements:
 #' \item{beta_est}{a vector of the parameter estimates.}
 #' \item{se_est}{if \code{sandwich_se = TRUE}, a vector of standard error estimates from the empirical sandwich estimator. Otherwise, \code{NULL}}
-#'
+#' \item{iteration_count}{the number of iterations used in \code{multiroot}.}
 #'
 #' @import tidyverse
 #' @import numDeriv
 #' @import survival
+#' @import rootSolve
 #'
 #' @export
 mle_censored <- function(formula,
@@ -99,15 +100,18 @@ mle_censored <- function(formula,
     rowSums(pieces)
   }
 
-  beta_est = rootSolve::multiroot(multiroot_func,
+  multiroot_results = rootSolve::multiroot(multiroot_func,
                                   data = data,
                                   Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
                                   cens_name = cens_name, cov_vars = cov_vars,
                                   cens_ind = cens_ind,
                                   m_func = m_func, mu_joint = mu_joint,
                                   Sigma_joint = Sigma_joint, sigma2 = sigma2,
-                                  start = starting_vals)$root
+                                  start = starting_vals)
+  beta_est = multiroot_results$root
   names(beta_est) = paste0(par_vec, seq(1:length(beta_est)))
+
+  iteration_count = multiroot_results$iter
 
   # run sandwich estimator
   if(sandwich_se){
@@ -119,7 +123,8 @@ mle_censored <- function(formula,
 
   # save beta estimates
   return(list(beta_est = beta_est,
-              se_est = se_est))
+              se_est = se_est,
+              iteration_count = iteration_count))
 }
 
 mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,

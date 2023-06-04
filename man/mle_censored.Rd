@@ -48,6 +48,7 @@ mle_censored(
 A list with the following elements:
 \item{beta_est}{a vector of the parameter estimates.}
 \item{se_est}{if \code{sandwich_se = TRUE}, a vector of standard error estimates from the empirical sandwich estimator. Otherwise, \code{NULL}}
+\item{iteration_count}{the number of iterations used in \code{multiroot}.}
 }
 \description{
 Performs an augmented inverse probability weighting estimation for a regression model with censored covariates.

@@ -15,6 +15,7 @@ aipw_censored(
   weight_opt,
   weights_user = NULL,
   weights_cov = NULL,
+  weights_threshold = NULL,
   cov_dist_opt = "MVN",
   cov_vars,
   cov_mean_user = NULL,
@@ -43,6 +44,8 @@ aipw_censored(
 
 \item{weights_cov}{if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.}
 
+\item{weights_threshold}{the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.}
+
 \item{cov_dist_opt}{a character string indicating specification of the covariate distribution. One of "MVN", "user MVN"}
 
 \item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.}
@@ -57,6 +60,7 @@ aipw_censored(
 A list with the following elements:
 \item{beta_est}{a vector of the parameter estimates.}
 \item{se_est}{if \code{sandwich_se = TRUE}, a vector of standard error estimates from the empirical sandwich estimator. Otherwise, \code{NULL}}
+\item{iteration_count}{the number of iterations used in \code{multiroot}.}
 }
 \description{
 Performs an augmented inverse probability weighting estimation for a regression model with censored covariates.

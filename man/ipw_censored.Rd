@@ -14,7 +14,8 @@ ipw_censored(
   sandwich_se = TRUE,
   weight_opt,
   weights_user = NULL,
-  weights_cov = NULL
+  weights_cov = NULL,
+  weights_threshold = NULL
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ ipw_censored(
 \item{weights_user}{if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default)}
 
 \item{weights_cov}{if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}}
+
+\item{weights_threshold}{the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.}
 }
 \value{
 A list with the following elements:

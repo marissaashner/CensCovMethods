@@ -12,6 +12,7 @@
 #' @param weight_opt a character string indicating which method of weight calculation is to be done. One of "Cox", "AFT_lognormal", "MVN", "user" (if "user", then user provides weights)
 #' @param weights_user if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default)
 #' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}
+#' @param weights_threshold the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.
 #'
 #' @return A list with the following elements:
 #' \item{beta_est}{a vector of the parameter estimates.}
@@ -32,7 +33,8 @@ ipw_censored <- function(formula,
                         sandwich_se = TRUE,
                         weight_opt,
                         weights_user = NULL,
-                        weights_cov = NULL){
+                        weights_cov = NULL,
+                        weights_threshold = NULL){
 
   # Need to add error checks
 
@@ -50,18 +52,26 @@ ipw_censored <- function(formula,
     weights = mvn_results$weights
   }
 
+  # thresholding
+  if(!is.null(weights_threshold)){
+    weights = ifelse(weights > weights_threshold, weights_threshold, weights)
+  }
+
   # run nls
   start = list(temp = starting_vals)
   names(start) = par_vec
   data$nls_weights = (data[cens_ind] %>% unlist)*weights
   #data$D = data[cens_ind]
   #data$weights = weights
-  beta_est <- summary(nls(formula,
+  model_est <- nls(formula,
                           data = data,
                           start = start,
                           weights = nls_weights,
                           control = nls.control(minFactor = 1/5096,
-                                                warnOnly = TRUE)))$coeff[,1] %>% t() %>% as.data.frame()
+                                                warnOnly = TRUE))
+  beta_est = summary(model_est)$coeff[,1] %>% t() %>% as.data.frame()
+  # sigma_est = summary(model_est)$sigma
+  iteration_count = model_est$convInfo$finIter
 
   # run sandwich estimator
   if(sandwich_se){
@@ -72,7 +82,8 @@ ipw_censored <- function(formula,
 
   # save beta estimates
   return(list(beta_est = beta_est,
-              se_est = se_est))
+              se_est = se_est,
+              iteration_count = iteration_count))
 }
 
 ipw_sandwich <- function(formula,

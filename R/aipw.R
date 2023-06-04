@@ -12,6 +12,7 @@
 #' @param weight_opt a character string indicating the method of weight calculation. One of "Cox", "AFT_lognormal", "MVN", "user" (if "user", then user provides weights).
 #' @param weights_user if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default).
 #' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.
+#' @param weights_threshold the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.
 #' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user MVN"
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
 #' @param cov_mean_user if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
@@ -21,11 +22,12 @@
 #' @return A list with the following elements:
 #' \item{beta_est}{a vector of the parameter estimates.}
 #' \item{se_est}{if \code{sandwich_se = TRUE}, a vector of standard error estimates from the empirical sandwich estimator. Otherwise, \code{NULL}}
-#'
+#' \item{iteration_count}{the number of iterations used in \code{multiroot}.}
 #'
 #' @import tidyverse
 #' @import numDeriv
 #' @import survival
+#' @import rootSolve
 #'
 #' @export
 aipw_censored <- function(formula,
@@ -38,6 +40,7 @@ aipw_censored <- function(formula,
                          weight_opt,
                          weights_user = NULL,
                          weights_cov = NULL,
+                         weights_threshold = NULL,
                          cov_dist_opt = "MVN",
                          cov_vars,
                          cov_mean_user = NULL,
@@ -46,7 +49,7 @@ aipw_censored <- function(formula,
 
   # Need to add error checks
 
-  # add thresholding options
+
 
   # weights
   if(weight_opt == "user"){
@@ -58,6 +61,11 @@ aipw_censored <- function(formula,
   }else if(weight_opt == "MVN"){
     mvn_results = weights_mvn(data, cens_ind, weights_cov, cens_name)
     weights = mvn_results$weights
+  }
+
+  # thresholding
+  if(!is.null(weights_threshold)){
+    weights = ifelse(weights > weights_threshold, weights_threshold, weights)
   }
 
   print("Weights complete!")
@@ -131,15 +139,18 @@ aipw_censored <- function(formula,
     rowSums(pieces)
   }
 
-  beta_est = rootSolve::multiroot(multiroot_func,
+  multiroot_results = rootSolve::multiroot(multiroot_func,
                                   data = data,
                                   Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
                                   cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
                                   m_func = m_func, integral_func_psi = integral_func_psi,
                                   integral_func_denom = integral_func_denom,
                                   mu_joint = mu_joint, Sigma_joint = Sigma_joint, sigma2 = sigma2,
-                                  start = starting_vals)$root
+                                  start = starting_vals)
+  beta_est = multiroot_results$root
   names(beta_est) = paste0(par_vec, seq(1:length(beta_est)))
+
+  iteration_count = multiroot_results$iter
 
   print("Parameters estimated!")
 
@@ -156,7 +167,8 @@ aipw_censored <- function(formula,
 
   # save beta estimates
   return(list(beta_est = beta_est,
-              se_est = se_est))
+              se_est = se_est,
+              iteration_count = iteration_count))
 }
 
 aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
