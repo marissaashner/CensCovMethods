@@ -73,7 +73,6 @@ aipw_censored <- function(formula,
   # covariate distribution
   if(cov_dist_opt == "MVN" & weight_opt != "MVN"){
     mvn_results = weights_mvn(data, cens_ind, cov_vars, cens_name)
-    weights = mvn_results$weights
     mu_joint = mvn_results$mu_joint
     Sigma_joint = mvn_results$Sigma_joint
     cov_dist_params = list(mu_joint = mu_joint,
