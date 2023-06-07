@@ -220,8 +220,7 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
         rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
       aipw_piece = rep(1 - data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
         psi_hat_i_mvn(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                  beta_est, m_func, integral_func_psi,
-                  integral_func_denom, cov_dist_params$mu_joint, cov_dist_params$Sigma_joint, sigma2)
+                  beta_est, m_func, cov_dist_params$mu_joint, cov_dist_params$Sigma_joint, sigma2)
 
       ipw_piece + aipw_piece
     }
@@ -236,8 +235,7 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
         rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
       aipw_piece = rep(1 - data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
         psi_hat_i_aft(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                  beta_est, m_func, integral_func_psi,
-                  integral_func_denom, cov_dist_params$model_est_x_z_coeff,
+                  beta_est, m_func, cov_dist_params$model_est_x_z_coeff,
                   cov_dist_params$model_est_x_z_sd, sigma2)
 
       ipw_piece + aipw_piece
