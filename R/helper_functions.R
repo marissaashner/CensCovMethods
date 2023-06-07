@@ -206,7 +206,7 @@ integral_func_denom_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_n
     #                        given = c(1,3),
     #                        X.given = c(log(data_row[cens_name] %>% as.numeric()),
     #                                    data_row[cov_vars] %>% as.numeric()))) %>% unlist()
-    value_ts[i] = f_y*f_x_z*f_c_xz/t[i]
+    value_ts[i] = f_y*f_x_z/t[i]
   }
   value_ts
 }
@@ -258,7 +258,7 @@ integral_func_psi_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
     #                        X.given = c(log(data_row[cens_name] %>% as.numeric()),
     #                                    data_row[cov_vars] %>% as.numeric()))) %>% unlist()
     value_ts[i] =
-      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z*f_c_xz/t[i]
+      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z/t[i]
   }
   value_ts %>% unlist()
 }
