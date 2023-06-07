@@ -114,10 +114,13 @@ cond_normal_params = function(mu, sigma, dependent.ind, X.given){
 ##### helper functions for AIPW #####
 #####################################
 
-psi_hat_i <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                      beta_temp, m_func, integral_func_psi,
-                      integral_func_denom, mu_joint, Sigma_joint, sigma2){
-  denominator =  integrate(integral_func_denom, 0, Inf, data_row = data, Y = Y,
+#########################
+##### Psi Functions #####
+#########################
+
+psi_hat_i_mvn <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                      beta_temp, m_func, mu_joint, Sigma_joint, sigma2){
+  denominator =  integrate(integral_func_denom_mvn, 0, Inf, data_row = data, Y = Y,
                            varNamesRHS = varNamesRHS, par_vec = par_vec,
                            cens_name = cens_name, cov_vars = cov_vars,
                            beta_temp = beta_temp, m_func = m_func,
@@ -129,7 +132,7 @@ psi_hat_i <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
     psi = rep(0, length(beta_temp))
   }else{
     numerator = lapply(1:length(beta_temp), function(j) {
-      integrate(integral_func_psi, 0, Inf, data_row = data, Y = Y,
+      integrate(integral_func_psi_mvn, 0, Inf, data_row = data, Y = Y,
                 varNamesRHS = varNamesRHS, par_vec = par_vec,
                 cens_name = cens_name, cov_vars = cov_vars,
                 beta_temp = beta_temp, m_func = m_func,
@@ -144,7 +147,43 @@ psi_hat_i <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
   psi
 }
 
-integral_func_denom <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+psi_hat_i_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                          beta_temp, m_func, model_est_x_z_coeff,
+                          model_est_x_z_sd, sigma2){
+  denominator =  integrate(integral_func_denom_aft, 0, Inf, data_row = data, Y = Y,
+                           varNamesRHS = varNamesRHS, par_vec = par_vec,
+                           cens_name = cens_name, cov_vars = cov_vars,
+                           beta_temp = beta_temp, m_func = m_func,
+                           model_est_x_z_coeff = model_est_x_z_coeff,
+                           model_est_x_z_sd = model_est_x_z_sd,
+                           sigma2 = sigma2,
+                           rel.tol = .Machine$double.eps^0.1,
+                           subdivisions = 1000)$value
+  if(abs(denominator) < 10e-4){
+    psi = rep(0, length(beta_temp))
+  }else{
+    numerator = lapply(1:length(beta_temp), function(j) {
+      integrate(integral_func_psi_aft, 0, Inf, data_row = data, Y = Y,
+                varNamesRHS = varNamesRHS, par_vec = par_vec,
+                cens_name = cens_name, cov_vars = cov_vars,
+                beta_temp = beta_temp, m_func = m_func,
+                model_est_x_z_coeff = model_est_x_z_coeff,
+                model_est_x_z_sd = model_est_x_z_sd,
+                sigma2 = sigma2, j = j,
+                rel.tol = .Machine$double.eps^0.1,
+                subdivisions = 1000)$value
+    }) %>% unlist() %>% as.numeric()
+    psi = numerator/denominator
+  }
+  #print(beta_temp)
+  psi
+}
+
+##########################################
+##### Integral Denominator Functions #####
+##########################################
+
+integral_func_denom_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                                 beta_temp, m_func,
                                 mu_joint, Sigma_joint, sigma2){
   value_ts = vector("numeric", length(t))
@@ -160,12 +199,42 @@ integral_func_denom <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name,
                                  dependent.ind = 1,
                                  given.ind = c(3),
                                  X.given = c(data_row[cov_vars] %>% as.numeric()))
+    f_c_xz = lapply(t, function(dummy_var)
+      condMVNorm::pcmvnorm(lower = log(data_row[cens_name] %>% as.numeric()), upper = Inf,
+                           mean = mu_joint, sigma = Sigma_joint,
+                           dependent.ind = 2,
+                           given = c(1,3),
+                           X.given = c(log(data_row[cens_name] %>% as.numeric()),
+                                       data_row[cov_vars] %>% as.numeric()))) %>% unlist()
+    value_ts[i] = f_y*f_x_z*f_c_xz/t[i]
+  }
+  value_ts
+}
+
+integral_func_denom_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                beta_temp, m_func,
+                                model_est_x_z_coeff, model_est_x_z_sd,
+                                sigma2){
+  value_ts = vector("numeric", length(t))
+  for(i in 1:length(t)){
+    data_row[cens_name] = t[i]
+    p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    m_t = m_func(p)
+    f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+    f_x_z = dnorm(log(data_row[cens_name]),
+          mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
+          sd = model_est_x_z_sd)
     value_ts[i] = f_y*f_x_z/t[i]
   }
   value_ts
 }
 
-integral_func_psi <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+########################################
+##### Integral Numerator Functions #####
+########################################
+
+integral_func_psi_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                               beta_temp, m_func,
                               mu_joint, Sigma_joint, j, sigma2){
   value_ts = vector("numeric", length(t))
@@ -181,18 +250,125 @@ integral_func_psi <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, c
                                  dependent.ind = 1,
                                  given.ind = c(3),
                                  X.given = c(data_row[cov_vars] %>% as.numeric()))
+    f_c_xz = lapply(t, function(dummy_var)
+      condMVNorm::pcmvnorm(lower = log(data_row[cens_name] %>% as.numeric()), upper = Inf,
+                           mean = mu_joint, sigma = Sigma_joint,
+                           dependent.ind = 2,
+                           given = c(1,3),
+                           X.given = c(log(data_row[cens_name] %>% as.numeric()),
+                                       data_row[cov_vars] %>% as.numeric()))) %>% unlist()
+    value_ts[i] =
+      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z*f_c_xz/t[i]
+  }
+  value_ts %>% unlist()
+}
+
+integral_func_psi_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                  beta_temp, m_func,
+                                  model_est_x_z_coeff, model_est_x_z_sd, j, sigma2){
+  value_ts = vector("numeric", length(t))
+  for(i in 1:length(t)){
+    data_row[cens_name] = t[i]
+    p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    m_t = m_func(p)
+    f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+    f_x_z = dnorm(log(data_row[cens_name]),
+                  mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
+                  sd = model_est_x_z_sd)
     value_ts[i] =
       numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z/t[i]
   }
   value_ts %>% unlist()
 }
 
+###############################
+##### Multiroot Functions #####
+###############################
+
+# set up multiroot function (the estimating equation we want to find the root of)
+
+##### MVN
+multiroot_func_mvn = function(beta_temp, data,
+                          Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
+                          m_func, mu_joint, Sigma_joint, sigma2){
+  print(beta_temp)
+  pieces = apply(data, 1, function(temp){
+    p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    ipw_piece = rep(temp[cens_ind]*temp["weights"], length(beta_temp))*
+      numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
+      rep(temp[Y]-m_func(p), length(beta_temp))
+    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
+      psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
+    ipw_piece + aipw_piece
+  }) %>% unname()
+  rowSums(pieces)
+}
+
+##### AFT
+multiroot_func_aft = function(beta_temp, data,
+                          Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
+                          m_func, model_est_x_z_coeff, model_est_x_z_sd, sigma2){
+  print(beta_temp)
+  pieces = apply(data, 1, function(temp){
+    p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    ipw_piece = rep(temp[cens_ind]*temp["weights"], length(beta_temp))*
+      numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
+      rep(temp[Y]-m_func(p), length(beta_temp))
+    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
+      psi_hat_i_aft(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                beta_temp, m_func, model_est_x_z_coeff, model_est_x_z_sd, sigma2)
+    ipw_piece + aipw_piece
+  }) %>% unname()
+  rowSums(pieces)
+}
+
 #####################################
 ##### helper functions for MLE ######
 #####################################
 
-psi_hat_i_mle <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+#########################
+##### Psi Functions #####
+#########################
+
+psi_hat_i_mle_mvn <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                       beta_temp, m_func, mu_joint, Sigma_joint, sigma2){
+  denominator =  integrate(integral_func_denom_mle_mvn, data[cens_name] %>% as.numeric(),
+                           Inf, data_row = data, Y = Y,
+                           varNamesRHS = varNamesRHS, par_vec = par_vec,
+                           cens_name = cens_name, cov_vars = cov_vars,
+                           beta_temp = beta_temp, m_func = m_func,
+                           C_val = data[cens_name]  %>% as.numeric(),
+                           mu_joint = mu_joint, Sigma_joint = Sigma_joint,
+                           sigma2 = sigma2,
+                           rel.tol = .Machine$double.eps^0.1,
+                           subdivisions = 1000)$value
+  if(abs(denominator) < 10e-4){
+    psi = rep(0, length(beta_temp))
+  }else{
+    numerator = lapply(1:length(beta_temp), function(j) {
+      integrate(integral_func_psi_mle_mvn, data[cens_name] %>% as.numeric(),
+                Inf, data_row = data, Y = Y,
+                varNamesRHS = varNamesRHS, par_vec = par_vec,
+                cens_name = cens_name, cov_vars = cov_vars,
+                beta_temp = beta_temp, m_func = m_func,
+                C_val = data[cens_name]  %>% as.numeric(),
+                mu_joint = mu_joint, Sigma_joint = Sigma_joint,
+                sigma2 = sigma2, j = j,
+                rel.tol = .Machine$double.eps^0.1,
+                subdivisions = 1000)$value
+    }) %>% unlist() %>% as.numeric()
+    psi = numerator/denominator
+  }
+  #print(beta_temp)
+  psi
+}
+
+psi_hat_i_mle_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                              beta_temp, m_func, model_est_x_z_coeff, model_est_x_z_sd, sigma2){
   denominator =  integrate(integral_func_denom_mle, data[cens_name] %>% as.numeric(),
                            Inf, data_row = data, Y = Y,
                            varNamesRHS = varNamesRHS, par_vec = par_vec,
@@ -224,7 +400,11 @@ psi_hat_i_mle <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
   psi
 }
 
-integral_func_denom_mle <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+##########################################
+##### Integral Denominator Functions #####
+##########################################
+
+integral_func_denom_mle_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                                 beta_temp, m_func, C_val,
                                 mu_joint, Sigma_joint, sigma2){
   value_ts = vector("numeric", length(t))
@@ -246,7 +426,29 @@ integral_func_denom_mle <- function(t, data_row, Y, varNamesRHS, par_vec, cens_n
   value_ts
 }
 
-integral_func_psi_mle <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+integral_func_denom_mle_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                    beta_temp, m_func, C_val,
+                                    model_est_x_z_coeff, model_est_x_z_sd, sigma2){
+  value_ts = vector("numeric", length(t))
+  for(i in 1:length(t)){
+    data_row[cens_name] = t[i]
+    p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    m_t = m_func(p)
+    f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+    f_x_cz = dnorm(log(data_row[cens_name]),
+                   mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
+                   sd = model_est_x_z_sd)
+    value_ts[i] = f_y*f_x_cz/t[i]
+  }
+  value_ts
+}
+
+########################################
+##### Integral Numerator Functions #####
+########################################
+
+integral_func_psi_mle_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                               beta_temp, m_func, C_val,
                               mu_joint, Sigma_joint, j, sigma2){
   value_ts = vector("numeric", length(t))
@@ -269,7 +471,70 @@ integral_func_psi_mle <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
   value_ts %>% unlist()
 }
 
+integral_func_psi_mle_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                      beta_temp, m_func, C_val,
+                                      model_est_x_z_coeff, model_est_x_z_sd, j, sigma2){
+  value_ts = vector("numeric", length(t))
+  for(i in 1:length(t)){
+    data_row[cens_name] = t[i]
+    p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    m_t = m_func(p)
+    f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+    f_x_cz = dnorm(log(data_row[cens_name]),
+                   mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
+                   sd = model_est_x_z_sd)
+    value_ts[i] =
+      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_cz/t[i]
+  }
+  value_ts %>% unlist()
+}
 
+###############################
+##### Multiroot Functions #####
+###############################
+
+# set up multiroot function (the estimating equation we want to find the root of)
+
+##### MVN
+multiroot_func_mle_mvn = function(beta_temp, data,
+                          Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
+                          m_func, mu_joint, Sigma_joint, sigma2){
+  pieces = apply(data, 1, function(temp){
+    p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    if(temp[cens_ind] == 1){
+      piece = numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
+        rep(temp[Y]-m_func(p), length(beta_temp))
+    }else{
+      piece = psi_hat_i_mle_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                            beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
+    }
+    # print(piece)
+    piece
+  }) %>% unname()
+  rowSums(pieces)
+}
+
+##### AFT
+multiroot_func_mle_aft = function(beta_temp, data,
+                              Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
+                              m_func, model_est_x_z_coeff, model_est_x_z_sd, sigma2){
+    pieces = apply(data, 1, function(temp){
+      p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
+      names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+      if(temp[cens_ind] == 1){
+        piece = numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
+          rep(temp[Y]-m_func(p), length(beta_temp))
+      }else{
+        piece = psi_hat_i_mle_aft(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                              beta_temp, model_est_x_z_coeff, model_est_x_z_sd, sigma2)
+      }
+      # print(piece)
+      piece
+    }) %>% unname()
+    rowSums(pieces)
+  }
 
 
 

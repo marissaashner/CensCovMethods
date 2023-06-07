@@ -9,7 +9,7 @@
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param starting_vals the starting values for the least squares algorithm. Must be a vector equal in length of the parameter vector
 #' @param sandwich_se if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated
-#' @param cov_dist_opt a character string indicating which method of covariate distribution is to be done. One of "MVN"
+#' @param cov_dist_opt a character string indicating which method of covariate distribution is to be done. One of "MVN", "user MVN", "AFT"
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}
 #' @param cov_mean_user if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}
 #' @param cov_sigma_user if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distributionof \code{(log(X), log(C), Z)}
@@ -46,9 +46,25 @@ mle_censored <- function(formula,
     mvn_results = weights_mvn(data, cens_ind, cov_vars, cens_name)
     mu_joint = mvn_results$mu_joint
     Sigma_joint = mvn_results$Sigma_joint
+    x_cz_dist_params = list(mu_joint = mu_joint,
+                            Sigma_joint = Sigma_joint)
   }else if(cov_dist_opt == "user MVN"){
     mu_joint = cov_mean_user
     Sigma_joint = cov_sigma_user
+    x_cz_dist_params = list(mu_joint = mu_joint,
+                           Sigma_joint = Sigma_joint)
+  }else if(cov_dist_opt == "AFT"){
+    ## want to estimate the parameters using AFT
+    aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
+                                    paste(colnames(data %>% select(all_of(cov_vars))),
+                                          collapse = "+")))
+    model_est_x_z = survreg(aft_formula,
+                            data = data,
+                            dist = "lognormal")
+    model_est_x_z_coeff = model_est_x_z$coefficients
+    model_est_x_z_sd = model_est_x_z$scale
+    x_cz_dist_params = list(model_est_x_z_coeff = model_est_x_z_coeff,
+                            model_est_x_z_sd = model_est_x_z_sd)
   }
 
   # extract variable names from formula
@@ -80,34 +96,24 @@ mle_censored <- function(formula,
   starting_vals = model_est_cc$beta_est %>% as.numeric()
   sigma2 = model_est_cc$sigma_est
 
-  # set up multiroot function (the estimating equation we want to find the root of)
-  multiroot_func = function(beta_temp, data,
-                            Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
-                            m_func, mu_joint, Sigma_joint, sigma2){
-    pieces = apply(data, 1, function(temp){
-      p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
-      names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
-      if(temp[cens_ind] == 1){
-        piece = numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
-          rep(temp[Y]-m_func(p), length(beta_temp))
-      }else{
-        piece = psi_hat_i_mle(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                  beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
-      }
-     # print(piece)
-      piece
-    }) %>% unname()
-    rowSums(pieces)
+  if(endsWith(cov_dist_opt,"MVN")){
+    multiroot_results = rootSolve::multiroot(multiroot_func_mle_mvn,
+                                             data = data,
+                                             Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
+                                             cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
+                                             m_func = m_func, mu_joint = mu_joint,
+                                             Sigma_joint = Sigma_joint, sigma2 = sigma2,
+                                             start = starting_vals, ...)
+  }else if(cov_dist_opt == "AFT"){
+    multiroot_results = rootSolve::multiroot(multiroot_func_mle_aft,
+                                             data = data,
+                                             Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
+                                             cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
+                                             m_func = m_func, model_est_x_z_coeff = model_est_x_z_coeff,
+                                             model_est_x_z_sd = model_est_x_z_sd, sigma2 = sigma2,
+                                             start = starting_vals, ...)
   }
 
-  multiroot_results = rootSolve::multiroot(multiroot_func,
-                                  data = data,
-                                  Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
-                                  cens_name = cens_name, cov_vars = cov_vars,
-                                  cens_ind = cens_ind,
-                                  m_func = m_func, mu_joint = mu_joint,
-                                  Sigma_joint = Sigma_joint, sigma2 = sigma2,
-                                  start = starting_vals)
   beta_est = multiroot_results$root
   names(beta_est) = paste0(par_vec, seq(1:length(beta_est)))
 
@@ -116,7 +122,8 @@ mle_censored <- function(formula,
   # run sandwich estimator
   if(sandwich_se){
     se_est = mle_sandwich(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                           beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
+                           beta_est, m_func, cens_ind, x_cz_dist_params, sigma2,
+                          cov_dist_opt)
   }else{
     se_est = NULL
   }
@@ -128,7 +135,8 @@ mle_censored <- function(formula,
 }
 
 mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                          beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2){
+                          beta_est, m_func, cens_ind, x_cz_dist_params, sigma2,
+                         cov_dist_opt){
 
   #convert beta_est to numeric
   beta_est = beta_est %>% as.numeric()
@@ -156,26 +164,45 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_
   }
 
   # create "g" function for the sandwich estimator
-  g = function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-               beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2){
-    p = c(beta_est, data[varNamesRHS])
-    names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
+  if(endsWith(cov_dist_opt, "MVN")){
+    g = function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                 beta_est, m_func, cens_ind, x_cz_dist_params, sigma2){
+      p = c(beta_est, data[varNamesRHS])
+      names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
-    if(data[cens_ind] == 1){
-      numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
-        rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
-    }else{
-      psi_hat_i_mle(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                beta_est, m_func, mu_joint, Sigma_joint, sigma2)
+      if(data[cens_ind] == 1){
+        numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
+          rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
+      }else{
+        psi_hat_i_mle_mvn(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                      beta_est, m_func, x_cz_dist_params$mu_joint,
+                      x_cz_dist_params$Sigma_joint, sigma2)
+      }
+    }
+  }else if(cov_dist_opt == "AFT"){
+    g = function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                 beta_est, m_func, cens_ind, x_cz_dist_params, sigma2){
+      p = c(beta_est, data[varNamesRHS])
+      names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
+
+      if(data[cens_ind] == 1){
+        numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
+          rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
+      }else{
+        psi_hat_i_mle_aft(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                      beta_est, m_func, x_cz_dist_params$model_est_x_z_coeff,
+                      x_cz_dist_params$model_est_x_z_sd, sigma2)
+      }
     }
   }
+
 
   # first derivative function
   # calculates first derivative for subject i (data x)
   # f(x;beta) where beta is of length lb, x is a scalar
   # first derivative = ( f(beta+ delta) - f(beta-delta) )/ (2 * delta)
   firstderivative <- function(beta, g, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                              m_func, cens_ind, mu_joint, Sigma_joint, sigma2){
+                              m_func, cens_ind, x_cz_dist_params, sigma2){
     lb <- length(beta)
     derivs <- matrix(data = 0, nrow = lb, ncol = lb)
     delta <- beta * (10 ^ (- 4))
@@ -187,9 +214,9 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_
 
       # Calculate function values
       yout1 <- g(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                 betal, m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
+                 betal, m_func, cens_ind, x_cz_dist_params, sigma2)
       yout2 <- g(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                 betar, m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
+                 betar, m_func, cens_ind, x_cz_dist_params, sigma2)
 
       # Calculate derivative and save in vector A
       derivs[i,] <- (yout2 - yout1) / (2 * delta[i])
@@ -204,7 +231,7 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_
   # take the inverse first derivative of g
   first_der <- apply(data, 1, function(temp){
     firstderivative(beta_est, g, temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                    m_func, cens_ind, mu_joint, Sigma_joint, sigma2)
+                    m_func, cens_ind, x_cz_dist_params, sigma2)
   })
   if(length(beta_est) > 1){
     first_der = first_der %>% rowMeans() %>% matrix(nrow = length(beta_est))
@@ -216,7 +243,7 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_
   # need to get the outer product of g at each observation and take the mean
   gs = apply(data, 1, function(temp)
     g(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-      beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2))
+      beta_est, m_func, cens_ind, x_cz_dist_params, sigma2))
   if(length(beta_est) > 1){
     outer_prod = apply(gs, 2, function(g) g%*%t(g))
     outer_prod = outer_prod %>% rowMeans() %>% matrix(nrow = length(beta_est))

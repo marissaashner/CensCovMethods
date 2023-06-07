@@ -34,7 +34,7 @@ mle_censored(
 
 \item{sandwich_se}{if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated}
 
-\item{cov_dist_opt}{a character string indicating which method of covariate distribution is to be done. One of "MVN"}
+\item{cov_dist_opt}{a character string indicating which method of covariate distribution is to be done. One of "MVN", "user MVN", "AFT"}
 
 \item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}}
 

@@ -46,7 +46,7 @@ aipw_censored(
 
 \item{weights_threshold}{the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.}
 
-\item{cov_dist_opt}{a character string indicating specification of the covariate distribution. One of "MVN", "user MVN"}
+\item{cov_dist_opt}{a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"}
 
 \item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.}
 
