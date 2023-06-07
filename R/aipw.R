@@ -180,7 +180,7 @@ aipw_censored <- function(formula,
 }
 
 aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                          beta_est, m_func, cov_dist_params, Sigma_joint, sigma2,
+                          beta_est, m_func, cens_ind, cov_dist_params, sigma2,
                           cov_dist_opt){
 
   #convert beta_est to numeric
@@ -226,7 +226,7 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
     }
   }else if(cov_dist_opt == "AFT"){
     g = function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                 beta_est, m_func, cens_ind, mu_joint, Sigma_joint, sigma2){
+                 beta_est, m_func, cens_ind, cov_dist_params, sigma2){
       p = c(beta_est, data[varNamesRHS])
       names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
