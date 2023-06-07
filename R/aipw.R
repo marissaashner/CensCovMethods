@@ -135,6 +135,16 @@ aipw_censored <- function(formula,
   starting_vals = model_est_cc$beta_est %>% as.numeric()
   sigma2 = model_est_cc$sigma_est
 
+  #### Find Psi for the CC Estimator
+  psi_all = apply(data, 1, function(temp){
+    # print("hi")
+    psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                  starting_vals, m_func, cov_dist_params$mu_joint,
+                  cov_dist_params$Sigma_joint, sigma2)
+  }) %>% as.data.frame()
+  colnames(psi_all) = paste0("psi", seq(1:length(starting_vals)))
+  data = cbind(data, psi_all)
+
   if(endsWith(cov_dist_opt, "MVN")){
     multiroot_results = rootSolve::multiroot(multiroot_func_mvn,
                                              data = data,

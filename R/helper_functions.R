@@ -199,13 +199,13 @@ integral_func_denom_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_n
                                  dependent.ind = 1,
                                  given.ind = c(3),
                                  X.given = c(data_row[cov_vars] %>% as.numeric()))
-    f_c_xz = lapply(t, function(dummy_var)
-      condMVNorm::pcmvnorm(lower = log(data_row[cens_name] %>% as.numeric()), upper = Inf,
-                           mean = mu_joint, sigma = Sigma_joint,
-                           dependent.ind = 2,
-                           given = c(1,3),
-                           X.given = c(log(data_row[cens_name] %>% as.numeric()),
-                                       data_row[cov_vars] %>% as.numeric()))) %>% unlist()
+    # f_c_xz = lapply(t, function(dummy_var)
+    #   condMVNorm::pcmvnorm(lower = log(data_row[cens_name] %>% as.numeric()), upper = Inf,
+    #                        mean = mu_joint, sigma = Sigma_joint,
+    #                        dependent.ind = 2,
+    #                        given = c(1,3),
+    #                        X.given = c(log(data_row[cens_name] %>% as.numeric()),
+    #                                    data_row[cov_vars] %>% as.numeric()))) %>% unlist()
     value_ts[i] = f_y*f_x_z*f_c_xz/t[i]
   }
   value_ts
@@ -250,13 +250,13 @@ integral_func_psi_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
                                  dependent.ind = 1,
                                  given.ind = c(3),
                                  X.given = c(data_row[cov_vars] %>% as.numeric()))
-    f_c_xz = lapply(t, function(dummy_var)
-      condMVNorm::pcmvnorm(lower = log(data_row[cens_name] %>% as.numeric()), upper = Inf,
-                           mean = mu_joint, sigma = Sigma_joint,
-                           dependent.ind = 2,
-                           given = c(1,3),
-                           X.given = c(log(data_row[cens_name] %>% as.numeric()),
-                                       data_row[cov_vars] %>% as.numeric()))) %>% unlist()
+    # f_c_xz = lapply(t, function(dummy_var)
+    #   condMVNorm::pcmvnorm(lower = log(data_row[cens_name] %>% as.numeric()), upper = Inf,
+    #                        mean = mu_joint, sigma = Sigma_joint,
+    #                        dependent.ind = 2,
+    #                        given = c(1,3),
+    #                        X.given = c(log(data_row[cens_name] %>% as.numeric()),
+    #                                    data_row[cov_vars] %>% as.numeric()))) %>% unlist()
     value_ts[i] =
       numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z*f_c_xz/t[i]
   }
@@ -299,7 +299,8 @@ multiroot_func_mvn = function(beta_temp, data,
     ipw_piece = rep(temp[cens_ind]*temp["weights"], length(beta_temp))*
       numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
       rep(temp[Y]-m_func(p), length(beta_temp))
-    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*1
+    psis = paste0("psi", seq(1:length(beta_temp)))
+    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*temp[psis]
     #  psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
     #            beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
     ipw_piece + aipw_piece
