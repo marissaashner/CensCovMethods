@@ -141,7 +141,7 @@ aipw_censored <- function(formula,
     psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                   starting_vals, m_func, cov_dist_params$mu_joint,
                   cov_dist_params$Sigma_joint, sigma2)
-  }) %>% as.data.frame()
+  }) %>% t() %>% as.data.frame()
   colnames(psi_all) = paste0("psi", seq(1:length(starting_vals)))
   data = cbind(data, psi_all)
 
