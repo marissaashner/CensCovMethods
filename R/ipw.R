@@ -50,6 +50,10 @@ ipw_censored <- function(formula,
     weights = weights_aft(data, cens_ind, weights_cov, cens_name)
   }else if(weight_opt == "MVN"){
     mvn_results = weights_mvn(data, cens_ind, weights_cov, cens_name)
+    mu_joint = mvn_results$mu_joint
+    Sigma_joint = mvn_results$Sigma_joint
+    weight_dist_params = list(mu_joint = mu_joint,
+                           Sigma_joint = Sigma_joint)
     weights = mvn_results$weights
   }
 

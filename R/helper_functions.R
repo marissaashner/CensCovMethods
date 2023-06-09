@@ -46,7 +46,7 @@ weights_mvn <- function(data, cens_ind, weights_cov, cens_name){
                       method = "L-BFGS-B",
                       lower = c(-Inf, -Inf, -Inf, 1e-4,1e-4,1e-4,-Inf,-Inf,-Inf),
                       upper = rep(Inf, 9))
-  params =params_est$par
+  params = params_est$par
   mu_joint = c(params[1], params[2], params[3])
   Sigma_joint = (matrix(c(params[4], params[7], params[8],
                           params[7], params[5], params[9],
@@ -110,6 +110,128 @@ cond_normal_params = function(mu, sigma, dependent.ind, X.given){
   return(list(mu_new = mu_new, sig_new = sig_new))
 }
 
+
+# first derivative function
+# calculates first derivative for subject i (data x)
+# f(x;beta) where beta is of length lb, x is a scalar
+# first derivative = ( f(beta+ delta) - f(beta-delta) )/ (2 * delta)
+#firstderivative_mvn <- function(beta, l, data, cens_name, cov_vars, cens_ind){
+#   lb <- length(beta)
+#   derivs <- matrix(data = 0, nrow = lb, ncol = lb)
+#   delta <- beta * (10 ^ (- 4))
+#   betal <- betar <- beta
+#   for (i in 1:lb) {
+#     # Perturb the ith element of beta
+#     betal[i] <- beta[i] - delta[i]
+#     betar[i] <- beta[i] + delta[i]
+#
+#     # Calculate function values
+#     yout1 <- l(betal, data[cens_name], data[cov_vars], data[cens_ind])
+#     yout2 <- l(betar, data[cens_name], data[cov_vars], data[cens_ind])
+#
+#     # Calculate derivative and save in vector A
+#     derivs[i,] <- (yout2 - yout1) / (2 * delta[i])
+#
+#     # Reset parameter vectors
+#     betal <- betar <- beta
+#   }
+#   #print("hi")
+#   return(derivs)
+# }
+
+
+# sandwich_ipw_estimate <- function(formula,
+#                                  data,
+#                                  cens_name,
+#                                  weights_cov,
+#                                  cens_ind,
+#                                 par_vec,
+#                                  beta_est,
+#                                  weights,
+#                                  weight_dist_params){
+#
+#   #convert beta_est to numeric
+#   beta_est = beta_est %>% as.numeric()
+#
+#   # add weights to data frame
+#   data$weights = weights
+#
+#   # extract variable names from formula
+#   varNames = all.vars(formula)
+#   form2 = formula
+#   form2[[2]] <- NULL
+#   varNamesRHS = all.vars(form2)
+#   Y = varNames[is.na(match(varNames, varNamesRHS))]
+#
+#   do.call("<-", list(par_vec, beta_est))
+#
+#   varNamesRHS = varNamesRHS[is.na(match(varNamesRHS, par_vec))]
+#
+#   # turn formula into function
+#   cmd <- tail(as.character(formula),1)
+#   exp <- parse(text=cmd)
+#   exp_nobracket <- exp %>% as.character() %>% str_remove_all(., "\\[|\\]") %>%
+#     parse(text = .)
+#   m_func = function(p){
+#     with(as.list(p),
+#          eval(exp_nobracket))
+#   }
+#
+#
+#   # create "g" function for the sandwich estimator
+#   g = function(data, beta_est, m_func, par_vec, var_namesRHS, cens_ind){
+#     p = c(beta_est, data[varNamesRHS])
+#     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
+#
+#     rep(data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
+#       numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
+#       rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
+#   }
+#
+#   # jacobian g function
+#   g_jacobian = function(data, beta_est, m_func, par_vec, var_namesRHS, cens_ind){
+#     p = c(beta_est, data[varNamesRHS])
+#     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
+#
+#     j = numDeriv::jacobian(m_func, p)[1:length(beta_est)]
+#
+#     rep(data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
+#       ((rootSolve::hessian(m_func, p)[1:length(beta_est), 1:length(beta_est)]*
+#           rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()) -
+#          outer(j,j)) %>% as.numeric()
+#   }
+#
+#
+#   # take the inverse first derivative of g
+#   first_der <- apply(data, 1, function(temp){
+#     g_jacobian(temp, beta_est, m_func, par_vec, var_namesRHS, cens_ind)
+#   })
+#   if(length(beta_est) > 1){
+#     first_der = first_der %>% rowMeans() %>% matrix(nrow = length(beta_est))
+#   }else{
+#     first_der = first_der %>% mean()
+#   }
+#   inv_first_der <- solve(first_der)
+#
+#   # need to get the outer product of g at each observation and take the mean
+#   gs = apply(data, 1, function(temp)
+#     g(temp, beta_est, m_func, par_vec, var_namesRHS, cens_ind))
+#   if(length(beta_est) > 1){
+#     outer_prod = apply(gs, 2, function(g) g%*%t(g))
+#     outer_prod = outer_prod %>% rowMeans() %>% matrix(nrow = length(beta_est))
+#   }else{
+#     outer_prod = gs^2
+#     outer_prod = outer_prod %>% mean()
+#   }
+#
+#
+#   ## then need to put it all together
+#   se = sqrt((inv_first_der %*% outer_prod %*% t(inv_first_der) / nrow(data)) %>% diag())
+#   return(se)
+#
+# }
+
+
 #####################################
 ##### helper functions for AIPW #####
 #####################################
@@ -117,6 +239,29 @@ cond_normal_params = function(mu, sigma, dependent.ind, X.given){
 #########################
 ##### Psi Functions #####
 #########################
+
+psi_hat_i_mvn_linear <- function(data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                 beta_temp, m_func, x_yz_dist_params){
+  data_row[cens_name] = 0
+  p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+  names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+  m = m_func(p)
+
+  # first and second moments of X | Y, Z
+  mu = c(1, (data_row[c(Y, cov_vars)] %>% as.numeric())) %*% x_yz_dist_params$model_est_x_yz_coeff
+  sig2 = x_yz_dist_params$model_est_x_yz_sd^2
+  ex = exp(mu + sig2/2)
+  ex2 = exp(2*mu + 2*sig2)
+
+  # for now, assume that cens_name is associated with beta[1]
+  psi = vector("numeric", length(beta_temp))
+  psi[1] = ex*(data_row[Y] - m) - beta_temp[1]*ex2
+  for(i in 2:length(beta_temp)){
+    psi[i] = numDeriv::jacobian(m_func, p)[i] *
+      (data_row[Y] - m - beta_temp[1]*ex)
+  }
+  psi %>% unlist()
+}
 
 psi_hat_i_mvn <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                       beta_temp, m_func, mu_joint, Sigma_joint, sigma2){
@@ -288,6 +433,24 @@ integral_func_psi_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
 
 # set up multiroot function (the estimating equation we want to find the root of)
 
+multiroot_func_mvn_linear = function(beta_temp, data,
+                                     Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
+                                     m_func, x_yz_dist_params){
+  print(beta_temp)
+  pieces = apply(data, 1, function(temp){
+    p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    ipw_piece = rep(temp[cens_ind]*temp["weights"], length(beta_temp))*
+      numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
+      rep(temp[Y]-m_func(p), length(beta_temp))
+    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
+      psi_hat_i_mvn_linear(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                    beta_temp, m_func, x_yz_dist_params)
+    ipw_piece + aipw_piece
+  }) %>% unname()
+  rowSums(pieces)
+}
+
 ##### MVN
 multiroot_func_mvn = function(beta_temp, data,
                           Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
@@ -300,9 +463,9 @@ multiroot_func_mvn = function(beta_temp, data,
       numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
       rep(temp[Y]-m_func(p), length(beta_temp))
     psis = paste0("psi", seq(1:length(beta_temp)))
-    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*temp[psis]
-    #  psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-    #            beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
+    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
+      psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
     ipw_piece + aipw_piece
   }) %>% unname()
   rowSums(pieces)
