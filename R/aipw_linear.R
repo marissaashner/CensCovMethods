@@ -119,22 +119,22 @@ aipw_censored_linear <- function(formula,
   # colnames(psi_all) = paste0("psi", seq(1:length(starting_vals)))
   # data = cbind(data, psi_all)
 
-  if(endsWith(cov_dist_opt, "MVN")){
+ # if(endsWith(cov_dist_opt, "MVN")){
     multiroot_results = rootSolve::multiroot(multiroot_func_mvn_linear,
                                              data = data,
                                              Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
                                              cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
                                              m_func = m_func,x_yz_dist_params = x_yz_dist_params,
                                              start = starting_vals, ...)
-  }else if(cov_dist_opt == "AFT"){
-    multiroot_results = rootSolve::multiroot(multiroot_func_aft,
-                                             data = data,
-                                             Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
-                                             cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
-                                             m_func = m_func, model_est_x_z_coeff = model_est_x_z_coeff,
-                                             model_est_x_z_sd = model_est_x_z_sd, sigma2 = sigma2,
-                                             start = starting_vals, ...)
-  }
+  # }else if(cov_dist_opt == "AFT"){
+  #   multiroot_results = rootSolve::multiroot(multiroot_func_aft,
+  #                                            data = data,
+  #                                            Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
+  #                                            cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
+  #                                            m_func = m_func, model_est_x_z_coeff = model_est_x_z_coeff,
+  #                                            model_est_x_z_sd = model_est_x_z_sd, sigma2 = sigma2,
+  #                                            start = starting_vals, ...)
+  # }
 
   beta_est = multiroot_results$root
   names(beta_est) = paste0(par_vec, seq(1:length(beta_est)))
