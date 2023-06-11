@@ -292,7 +292,7 @@ psi_hat_i_mvn <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
   psi
 }
 
-psi_hat_i_mvn_linear <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+psi_hat_i_mvn_linear <- function(data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                           beta_temp, m_func){
   data_row[cens_name] = 0
   p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
