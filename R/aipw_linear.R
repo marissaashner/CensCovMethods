@@ -80,6 +80,38 @@ aipw_censored_linear <- function(formula,
   # add weights to data frame
   data$weights = weights
 
+
+  # covariate distribution
+  if(cov_dist_opt == "MVN" & weight_opt != "MVN"){
+    mvn_results = weights_mvn(data, cens_ind, cov_vars, cens_name)
+    mu_joint = mvn_results$mu_joint
+    Sigma_joint = mvn_results$Sigma_joint
+    cov_dist_params = list(mu_joint = mu_joint,
+                           Sigma_joint = Sigma_joint)
+  }else if(cov_dist_opt == "MVN" & weight_opt == "MVN"){
+    mu_joint = mvn_results$mu_joint
+    Sigma_joint = mvn_results$Sigma_joint
+    cov_dist_params = list(mu_joint = mu_joint,
+                           Sigma_joint = Sigma_joint)
+  }else if(cov_dist_opt == "user MVN"){
+    mu_joint = cov_mean_user
+    Sigma_joint = cov_sigma_user
+    cov_dist_params = list(mu_joint = mu_joint,
+                           Sigma_joint = Sigma_joint)
+  }else if(cov_dist_opt == "AFT"){
+    ## want to estimate the parameters using AFT
+    aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
+                                    paste(colnames(data %>% select(all_of(cov_vars))),
+                                          collapse = "+")))
+    model_est_x_z = survreg(aft_formula,
+                            data = data,
+                            dist = "lognormal")
+    model_est_x_z_coeff = model_est_x_z$coefficients
+    model_est_x_z_sd = model_est_x_z$scale
+    cov_dist_params = list(model_est_x_z_coeff = model_est_x_z_coeff,
+                           model_est_x_z_sd = model_est_x_z_sd)
+  }
+
   # extract variable names from formula
   varNames = all.vars(formula)
   form2 = formula
