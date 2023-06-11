@@ -59,7 +59,13 @@ aipw_censored_linear <- function(formula,
 
   # stabilize weights
   # maybe add option for this
-  weights = weights*mean(data[cens_ind] %>% unlist())
+  km_formula = as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~ 1"))
+  km_fit = survival::survfit(km_formula, data = data)
+  km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
+                        surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
+  colnames(km_data)[1] = cens_name
+  data <- data %>% left_join(km_data, by = cens_name)
+  weights = weights*data$surv_km
 
   # thresholding
   if(!is.null(weights_threshold)){
