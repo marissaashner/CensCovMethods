@@ -57,6 +57,10 @@ aipw_censored_linear <- function(formula,
     weights = mvn_results$weights
   }
 
+  # stabilize weights
+  # maybe add option for this
+  weights = weights*mean(data[cens_ind])
+
   # thresholding
   if(!is.null(weights_threshold)){
     weights = ifelse(weights > weights_threshold, weights_threshold, weights)
