@@ -59,7 +59,7 @@ aipw_censored_linear <- function(formula,
 
   # stabilize weights
   # maybe add option for this
-  weights = weights*mean(data[cens_ind])
+  weights = weights*mean(data[cens_ind] %>% unlist())
 
   # thresholding
   if(!is.null(weights_threshold)){
