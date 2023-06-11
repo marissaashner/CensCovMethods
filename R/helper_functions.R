@@ -301,10 +301,10 @@ psi_hat_i_mvn_linear <- function(data_row, Y, varNamesRHS, par_vec, cens_name, c
 
   # for now, assume that cens_name is associated with beta[1]
   psi = vector("numeric", length(beta_temp))
-  psi[1] = data_row[ex]*(data_row[Y] - m) - beta_temp[1]*data_row[ex2]
+  psi[1] = data_row$ex*(data_row[Y] - m) - beta_temp[1]*data_row$ex2
   for(i in 2:length(beta_temp)){
     psi[i] = numDeriv::jacobian(m_func, p)[i] *
-      (data_row[Y] - m - beta_temp[1]*data_row[ex])
+      (data_row[Y] - m - beta_temp[1]*data_row$ex)
   }
   psi %>% unlist()
 }
