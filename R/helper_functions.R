@@ -12,10 +12,10 @@ weights_cox <- function(data, cens_ind, weights_cov, cens_name){
 
   ## get Ghat estimates for each W in the observed data and join with the original df
   weights_data <- data.frame(W = summary(G, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
-                             weights = 1/(summary(G, times = data[cens_name] %>% unlist(), extend = TRUE)$surv %>% diag()))
+                             weights_cox = 1/(summary(G, times = data[cens_name] %>% unlist(), extend = TRUE)$surv %>% diag()))
   colnames(weights_data)[1] = cens_name
   data <- data %>% left_join(weights_data, by = cens_name)
-  return(data$weights)
+  return(data$weights_cox)
 }
 
 weights_aft <- function(data, cens_ind, weights_cov, cens_name){
