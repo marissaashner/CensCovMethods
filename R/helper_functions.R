@@ -240,7 +240,7 @@ cond_normal_params = function(mu, sigma, dependent.ind, X.given){
 ##### Psi Functions #####
 #########################
 
-psi_hat_i_mvn_linear <- function(data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+psi_hat_i_mvn_linear_x_yz <- function(data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                                  beta_temp, m_func, x_yz_dist_params){
   data_row[cens_name] = 0
   p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
@@ -290,6 +290,23 @@ psi_hat_i_mvn <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
   }
   #print(beta_temp)
   psi
+}
+
+psi_hat_i_mvn_linear <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                          beta_temp, m_func){
+  data_row[cens_name] = 0
+  p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+  names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+  m = m_func(p)
+
+  # for now, assume that cens_name is associated with beta[1]
+  psi = vector("numeric", length(beta_temp))
+  psi[1] = data_row[ex]*(data_row[Y] - m) - beta_temp[1]*data_row[ex2]
+  for(i in 2:length(beta_temp)){
+    psi[i] = numDeriv::jacobian(m_func, p)[i] *
+      (data_row[Y] - m - beta_temp[1]*data_row[ex])
+  }
+  psi %>% unlist()
 }
 
 psi_hat_i_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
@@ -408,6 +425,63 @@ integral_func_psi_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
   value_ts %>% unlist()
 }
 
+
+integral_func_ex_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                    beta_temp, m_func,
+                                    mu_joint, Sigma_joint, sigma2){
+  value_ts = vector("numeric", length(t))
+  for(i in 1:length(t)){
+    data_row[cens_name] = t[i]
+    p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    m_t = m_func(p)
+    f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+    f_x_z = condMVNorm::dcmvnorm(x = log(data_row[cens_name] %>% as.numeric())[1],
+                                 mean = mu_joint,
+                                 sigma = Sigma_joint,
+                                 dependent.ind = 1,
+                                 given.ind = c(3),
+                                 X.given = c(data_row[cov_vars] %>% as.numeric()))
+    # f_c_xz = lapply(t, function(dummy_var)
+    #   condMVNorm::pcmvnorm(lower = log(data_row[cens_name] %>% as.numeric()), upper = Inf,
+    #                        mean = mu_joint, sigma = Sigma_joint,
+    #                        dependent.ind = 2,
+    #                        given = c(1,3),
+    #                        X.given = c(log(data_row[cens_name] %>% as.numeric()),
+    #                                    data_row[cov_vars] %>% as.numeric()))) %>% unlist()
+    value_ts[i] = t[i]*f_y*f_x_z/t[i]
+  }
+  value_ts
+}
+
+integral_func_ex2_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                 beta_temp, m_func,
+                                 mu_joint, Sigma_joint, sigma2){
+  value_ts = vector("numeric", length(t))
+  for(i in 1:length(t)){
+    data_row[cens_name] = t[i]
+    p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    m_t = m_func(p)
+    f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+    f_x_z = condMVNorm::dcmvnorm(x = log(data_row[cens_name] %>% as.numeric())[1],
+                                 mean = mu_joint,
+                                 sigma = Sigma_joint,
+                                 dependent.ind = 1,
+                                 given.ind = c(3),
+                                 X.given = c(data_row[cov_vars] %>% as.numeric()))
+    # f_c_xz = lapply(t, function(dummy_var)
+    #   condMVNorm::pcmvnorm(lower = log(data_row[cens_name] %>% as.numeric()), upper = Inf,
+    #                        mean = mu_joint, sigma = Sigma_joint,
+    #                        dependent.ind = 2,
+    #                        given = c(1,3),
+    #                        X.given = c(log(data_row[cens_name] %>% as.numeric()),
+    #                                    data_row[cov_vars] %>% as.numeric()))) %>% unlist()
+    value_ts[i] = t[i]^2*f_y*f_x_z/t[i]
+  }
+  value_ts
+}
+
 integral_func_psi_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                                   beta_temp, m_func,
                                   model_est_x_z_coeff, model_est_x_z_sd, j, sigma2){
@@ -433,7 +507,7 @@ integral_func_psi_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
 
 # set up multiroot function (the estimating equation we want to find the root of)
 
-multiroot_func_mvn_linear = function(beta_temp, data,
+multiroot_func_mvn_linear_x_yz = function(beta_temp, data,
                                      Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
                                      m_func, x_yz_dist_params){
   print(beta_temp)
@@ -444,12 +518,31 @@ multiroot_func_mvn_linear = function(beta_temp, data,
       numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
       rep(temp[Y]-m_func(p), length(beta_temp))
     aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
-      psi_hat_i_mvn_linear(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+      psi_hat_i_mvn_linear_x_yz(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                     beta_temp, m_func, x_yz_dist_params)
     ipw_piece + aipw_piece
   }) %>% unname()
   rowSums(pieces)
 }
+
+multiroot_func_mvn_linear = function(beta_temp, data,
+                                          Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
+                                          m_func){
+  print(beta_temp)
+  pieces = apply(data, 1, function(temp){
+    p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    ipw_piece = rep(temp[cens_ind]*temp["weights"], length(beta_temp))*
+      numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
+      rep(temp[Y]-m_func(p), length(beta_temp))
+    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
+      psi_hat_i_mvn_linear(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                           beta_temp, m_func)
+    ipw_piece + aipw_piece
+  }) %>% unname()
+  rowSums(pieces)
+}
+
 
 ##### MVN
 multiroot_func_mvn = function(beta_temp, data,

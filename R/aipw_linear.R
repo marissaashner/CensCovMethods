@@ -13,6 +13,7 @@
 #' @param weights_user if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default).
 #' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.
 #' @param weights_threshold the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.
+#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
 #' @param ... additional arguments passed to function \code{multiroot}.
 #'
@@ -28,18 +29,19 @@
 #'
 #' @export
 aipw_censored_linear <- function(formula,
-                          data,
-                          cens_ind,
-                          cens_name,
-                          par_vec,
-                          starting_vals,
-                          sandwich_se = TRUE,
-                          weight_opt,
-                          weights_user = NULL,
-                          weights_cov = NULL,
-                          weights_threshold = NULL,
-                          cov_vars,
-                          ...){
+                                 data,
+                                 cens_ind,
+                                 cens_name,
+                                 par_vec,
+                                 starting_vals,
+                                 sandwich_se = TRUE,
+                                 weight_opt,
+                                 weights_user = NULL,
+                                 weights_cov = NULL,
+                                 weights_threshold = NULL,
+                                 cov_dist_opt,
+                                 cov_vars,
+                                 ...){
 
   # Need to add error checks
 
@@ -59,13 +61,14 @@ aipw_censored_linear <- function(formula,
 
   # stabilize weights
   # maybe add option for this
-  km_formula = as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~ 1"))
-  km_fit = survival::survfit(km_formula, data = data)
-  km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
-                        surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
-  colnames(km_data)[1] = cens_name
-  data <- data %>% left_join(km_data, by = cens_name)
-  weights = weights*data$surv_km
+  # km_formula = as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~ 1"))
+  # km_fit = survival::survfit(km_formula, data = data)
+  # km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
+  #                       surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
+  # colnames(km_data)[1] = cens_name
+  # data <- data %>% left_join(km_data, by = cens_name)
+  # weights = weights*data$surv_km
+  weights = weights*mean(data[cens_name] %>% unlist())
 
   # thresholding
   if(!is.null(weights_threshold)){
@@ -95,19 +98,6 @@ aipw_censored_linear <- function(formula,
          eval(exp_nobracket))
   }
 
-  # Find the moments for X | Y, Z
-  ## want to estimate the parameters using AFT
-  aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
-                                  paste(colnames(data %>% select(all_of(Y), all_of(cov_vars))),
-                                        collapse = "+")))
-  model_est_x_yz = survreg(aft_formula,
-                          data = data,
-                          dist = "lognormal")
-  model_est_x_yz_coeff = model_est_x_yz$coefficients
-  model_est_x_yz_sd = model_est_x_yz$scale
-  x_yz_dist_params = list(model_est_x_yz_coeff = model_est_x_yz_coeff,
-                         model_est_x_yz_sd = model_est_x_yz_sd)
-
   # Note: the A function is as follows
   # set p --- p = c(beta_temp, data[varNamesRHS])
   # set names for p ---- names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
@@ -119,6 +109,40 @@ aipw_censored_linear <- function(formula,
   starting_vals = model_est_cc$beta_est %>% as.numeric()
   sigma2 = model_est_cc$sigma_est
 
+  # Need to find EX and EX2 for each observation.
+  denom_all = apply(data, 1, function(temp){
+    integrate(integral_func_denom_mvn, 0, Inf, data_row = temp, Y = Y,
+                             varNamesRHS = varNamesRHS, par_vec = par_vec,
+                             cens_name = cens_name, cov_vars = cov_vars,
+                             beta_temp = starting_vals, m_func = m_func,
+                             mu_joint = mu_joint, Sigma_joint = Sigma_joint,
+                             sigma2 = sigma2,
+                             rel.tol = .Machine$double.eps^0.1,
+                             subdivisions = 1000)$value
+  })
+  ex_numerator_all = apply(data, 1, function(temp){
+    integrate(integral_func_ex2_mvn, 0, Inf, data_row = temp, Y = Y,
+              varNamesRHS = varNamesRHS, par_vec = par_vec,
+              cens_name = cens_name, cov_vars = cov_vars,
+              beta_temp = starting_vals, m_func = m_func,
+              mu_joint = mu_joint, Sigma_joint = Sigma_joint,
+              sigma2 = sigma2,
+              rel.tol = .Machine$double.eps^0.1,
+              subdivisions = 1000)$value
+  })
+  ex2_numerator_all = apply(data, 1, function(temp){
+    integrate(integral_func_ex_mvn, 0, Inf, data_row = temp, Y = Y,
+              varNamesRHS = varNamesRHS, par_vec = par_vec,
+              cens_name = cens_name, cov_vars = cov_vars,
+              beta_temp = starting_vals, m_func = m_func,
+              mu_joint = mu_joint, Sigma_joint = Sigma_joint,
+              sigma2 = sigma2,
+              rel.tol = .Machine$double.eps^0.1,
+              subdivisions = 1000)$value
+  })
+  data$ex = ex_numerator_all/denom_all
+  data$ex2 = ex2_numerator_all/denom_all
+
   #### Find Psi for the CC Estimator
   # psi_all = apply(data, 1, function(temp){
   #   # print("hi")
@@ -129,22 +153,22 @@ aipw_censored_linear <- function(formula,
   # colnames(psi_all) = paste0("psi", seq(1:length(starting_vals)))
   # data = cbind(data, psi_all)
 
- # if(endsWith(cov_dist_opt, "MVN")){
-    multiroot_results = rootSolve::multiroot(multiroot_func_mvn_linear,
+   if(endsWith(cov_dist_opt, "MVN")){
+  multiroot_results = rootSolve::multiroot(multiroot_func_mvn_linear,
+                                           data = data,
+                                           Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
+                                           cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
+                                           m_func = m_func,
+                                           start = starting_vals, ...)
+  }else if(cov_dist_opt == "AFT"){
+    multiroot_results = rootSolve::multiroot(multiroot_func_aft,
                                              data = data,
                                              Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
                                              cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
-                                             m_func = m_func,x_yz_dist_params = x_yz_dist_params,
+                                             m_func = m_func, model_est_x_z_coeff = model_est_x_z_coeff,
+                                             model_est_x_z_sd = model_est_x_z_sd, sigma2 = sigma2,
                                              start = starting_vals, ...)
-  # }else if(cov_dist_opt == "AFT"){
-  #   multiroot_results = rootSolve::multiroot(multiroot_func_aft,
-  #                                            data = data,
-  #                                            Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
-  #                                            cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
-  #                                            m_func = m_func, model_est_x_z_coeff = model_est_x_z_coeff,
-  #                                            model_est_x_z_sd = model_est_x_z_sd, sigma2 = sigma2,
-  #                                            start = starting_vals, ...)
-  # }
+  }
 
   beta_est = multiroot_results$root
   names(beta_est) = paste0(par_vec, seq(1:length(beta_est)))
@@ -296,6 +320,4 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
   return(se)
 
 }
-
-
 

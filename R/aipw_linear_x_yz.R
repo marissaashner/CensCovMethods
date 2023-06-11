@@ -1,4 +1,4 @@
-#' Augmented Inverse Probability Weighting for Censored Covariates
+#' Augmented Inverse Probability Weighting for Censored Covariates with a Linear Model
 #'
 #' Performs an augmented inverse probability weighting estimation for a regression model with censored covariates.
 #'
@@ -13,10 +13,7 @@
 #' @param weights_user if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default).
 #' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.
 #' @param weights_threshold the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.
-#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
-#' @param cov_mean_user if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
-#' @param cov_sigma_user if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
 #' @param ... additional arguments passed to function \code{multiroot}.
 #'
 #' @return A list with the following elements:
@@ -30,22 +27,19 @@
 #' @import rootSolve
 #'
 #' @export
-aipw_censored <- function(formula,
-                         data,
-                         cens_ind,
-                         cens_name,
-                         par_vec,
-                         starting_vals,
-                         sandwich_se = TRUE,
-                         weight_opt,
-                         weights_user = NULL,
-                         weights_cov = NULL,
-                         weights_threshold = NULL,
-                         cov_dist_opt = "MVN",
-                         cov_vars,
-                         cov_mean_user = NULL,
-                         cov_sigma_user = NULL,
-                         ...){
+aipw_censored_linear_x_yz <- function(formula,
+                          data,
+                          cens_ind,
+                          cens_name,
+                          par_vec,
+                          starting_vals,
+                          sandwich_se = TRUE,
+                          weight_opt,
+                          weights_user = NULL,
+                          weights_cov = NULL,
+                          weights_threshold = NULL,
+                          cov_vars,
+                          ...){
 
   # Need to add error checks
 
@@ -81,39 +75,6 @@ aipw_censored <- function(formula,
 
   print("Weights complete!")
 
-  # covariate distribution
-  if(cov_dist_opt == "MVN" & weight_opt != "MVN"){
-    mvn_results = weights_mvn(data, cens_ind, cov_vars, cens_name)
-    mu_joint = mvn_results$mu_joint
-    Sigma_joint = mvn_results$Sigma_joint
-    cov_dist_params = list(mu_joint = mu_joint,
-                           Sigma_joint = Sigma_joint)
-  }else if(cov_dist_opt == "MVN" & weight_opt == "MVN"){
-    mu_joint = mvn_results$mu_joint
-    Sigma_joint = mvn_results$Sigma_joint
-    cov_dist_params = list(mu_joint = mu_joint,
-                           Sigma_joint = Sigma_joint)
-  }else if(cov_dist_opt == "user MVN"){
-    mu_joint = cov_mean_user
-    Sigma_joint = cov_sigma_user
-    cov_dist_params = list(mu_joint = mu_joint,
-                           Sigma_joint = Sigma_joint)
-  }else if(cov_dist_opt == "AFT"){
-    ## want to estimate the parameters using AFT
-    aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
-                                    paste(colnames(data %>% select(all_of(cov_vars))),
-                                          collapse = "+")))
-    model_est_x_z = survreg(aft_formula,
-                            data = data,
-                            dist = "lognormal")
-    model_est_x_z_coeff = model_est_x_z$coefficients
-    model_est_x_z_sd = model_est_x_z$scale
-    cov_dist_params = list(model_est_x_z_coeff = model_est_x_z_coeff,
-                           model_est_x_z_sd = model_est_x_z_sd)
-  }
-
-  print("Covariate distribution parameters complete!")
-
   # add weights to data frame
   data$weights = weights
 
@@ -134,6 +95,19 @@ aipw_censored <- function(formula,
     with(as.list(p),
          eval(exp_nobracket))
   }
+
+  # Find the moments for X | Y, Z
+  ## want to estimate the parameters using AFT
+  aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
+                                  paste(colnames(data %>% select(all_of(Y), all_of(cov_vars))),
+                                        collapse = "+")))
+  model_est_x_yz = survreg(aft_formula,
+                          data = data,
+                          dist = "lognormal")
+  model_est_x_yz_coeff = model_est_x_yz$coefficients
+  model_est_x_yz_sd = model_est_x_yz$scale
+  x_yz_dist_params = list(model_est_x_yz_coeff = model_est_x_yz_coeff,
+                         model_est_x_yz_sd = model_est_x_yz_sd)
 
   # Note: the A function is as follows
   # set p --- p = c(beta_temp, data[varNamesRHS])
@@ -156,23 +130,22 @@ aipw_censored <- function(formula,
   # colnames(psi_all) = paste0("psi", seq(1:length(starting_vals)))
   # data = cbind(data, psi_all)
 
-  if(endsWith(cov_dist_opt, "MVN")){
-    multiroot_results = rootSolve::multiroot(multiroot_func_mvn,
+ # if(endsWith(cov_dist_opt, "MVN")){
+    multiroot_results = rootSolve::multiroot(multiroot_func_mvn_linear_x_yz,
                                              data = data,
                                              Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
                                              cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
-                                             m_func = m_func, mu_joint = mu_joint,
-                                             Sigma_joint = Sigma_joint, sigma2 = sigma2,
+                                             m_func = m_func,x_yz_dist_params = x_yz_dist_params,
                                              start = starting_vals, ...)
-  }else if(cov_dist_opt == "AFT"){
-    multiroot_results = rootSolve::multiroot(multiroot_func_aft,
-                                             data = data,
-                                             Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
-                                             cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
-                                             m_func = m_func, model_est_x_z_coeff = model_est_x_z_coeff,
-                                             model_est_x_z_sd = model_est_x_z_sd, sigma2 = sigma2,
-                                             start = starting_vals, ...)
-  }
+  # }else if(cov_dist_opt == "AFT"){
+  #   multiroot_results = rootSolve::multiroot(multiroot_func_aft,
+  #                                            data = data,
+  #                                            Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
+  #                                            cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
+  #                                            m_func = m_func, model_est_x_z_coeff = model_est_x_z_coeff,
+  #                                            model_est_x_z_sd = model_est_x_z_sd, sigma2 = sigma2,
+  #                                            start = starting_vals, ...)
+  # }
 
   beta_est = multiroot_results$root
   names(beta_est) = paste0(par_vec, seq(1:length(beta_est)))
@@ -240,7 +213,7 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
         rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
       aipw_piece = rep(1 - data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
         psi_hat_i_mvn(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                  beta_est, m_func, cov_dist_params$mu_joint, cov_dist_params$Sigma_joint, sigma2)
+                      beta_est, m_func, cov_dist_params$mu_joint, cov_dist_params$Sigma_joint, sigma2)
 
       ipw_piece + aipw_piece
     }
@@ -255,8 +228,8 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
         rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
       aipw_piece = rep(1 - data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
         psi_hat_i_aft(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                  beta_est, m_func, cov_dist_params$model_est_x_z_coeff,
-                  cov_dist_params$model_est_x_z_sd, sigma2)
+                      beta_est, m_func, cov_dist_params$model_est_x_z_coeff,
+                      cov_dist_params$model_est_x_z_sd, sigma2)
 
       ipw_piece + aipw_piece
     }
