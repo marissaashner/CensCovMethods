@@ -556,9 +556,9 @@ multiroot_func_mvn = function(beta_temp, data,
       numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
       rep(temp[Y]-m_func(p), length(beta_temp))
     psis = paste0("psi", seq(1:length(beta_temp)))
-    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
-      psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
+    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*temp[psis]
+    #  psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+    #            beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
     ipw_piece + aipw_piece
   }) %>% unname()
   rowSums(pieces)

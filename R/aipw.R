@@ -65,14 +65,14 @@ aipw_censored <- function(formula,
 
   # stabilize weights
   # maybe add option for this
-  # km_formula = as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~ 1"))
-  # km_fit = survival::survfit(km_formula, data = data)
-  # km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
-  #                       surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
-  # colnames(km_data)[1] = cens_name
-  # data <- data %>% left_join(km_data, by = cens_name)
-  # weights = weights*data$surv_km
-  weights = weights*mean(data[cens_name] %>% unlist())
+  km_formula = as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~ 1"))
+  km_fit = survival::survfit(km_formula, data = data)
+  km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
+                        surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
+  colnames(km_data)[1] = cens_name
+  data <- data %>% left_join(km_data, by = cens_name)
+  weights = weights*data$surv_km
+  #weights = weights*mean(data[cens_name] %>% unlist())
 
   # thresholding
   if(!is.null(weights_threshold)){
@@ -147,14 +147,14 @@ aipw_censored <- function(formula,
   sigma2 = model_est_cc$sigma_est
 
   #### Find Psi for the CC Estimator
-  # psi_all = apply(data, 1, function(temp){
-  #   # print("hi")
-  #   psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-  #                 starting_vals, m_func, cov_dist_params$mu_joint,
-  #                 cov_dist_params$Sigma_joint, sigma2)
-  # }) %>% t() %>% as.data.frame()
-  # colnames(psi_all) = paste0("psi", seq(1:length(starting_vals)))
-  # data = cbind(data, psi_all)
+  psi_all = apply(data, 1, function(temp){
+    # print("hi")
+    psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                  starting_vals, m_func, cov_dist_params$mu_joint,
+                  cov_dist_params$Sigma_joint, sigma2)
+  }) %>% t() %>% as.data.frame()
+  colnames(psi_all) = paste0("psi", seq(1:length(starting_vals)))
+  data = cbind(data, psi_all)
 
   if(endsWith(cov_dist_opt, "MVN")){
     multiroot_results = rootSolve::multiroot(multiroot_func_mvn,
