@@ -768,7 +768,7 @@ psi_hat_i_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
 ##### Integral Denominator Functions #####
 ##########################################
 
-integral_func_denom_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+integral_func_denom_mvn_acc <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                                     beta_temp, m_func,
                                     mu_joint, Sigma_joint, sigma2){
   value_ts = vector("numeric", length(t))
