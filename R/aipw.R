@@ -17,6 +17,7 @@
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
 #' @param cov_mean_user if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
 #' @param cov_sigma_user if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
+#' @param stabilize_weights one of \code{c("None", "Mean", "KM")}
 #' @param ... additional arguments passed to function \code{multiroot}.
 #'
 #' @return A list with the following elements:
@@ -45,6 +46,7 @@ aipw_censored <- function(formula,
                          cov_vars,
                          cov_mean_user = NULL,
                          cov_sigma_user = NULL,
+                         stabilize_weights,
                          ...){
 
   # Need to add error checks
@@ -63,16 +65,19 @@ aipw_censored <- function(formula,
     weights = mvn_results$weights
   }
 
-  # stabilize weights
-  # maybe add option for this
-  # km_formula = as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~ 1"))
-  # km_fit = survival::survfit(km_formula, data = data)
-  # km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
-  #                       surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
-  # colnames(km_data)[1] = cens_name
-  # data <- data %>% left_join(km_data, by = cens_name)
-  # weights = weights*data$surv_km
-  #weights = weights*mean(data[cens_name] %>% unlist())
+  #stabilize weights
+  if(stabilize_weights == "KM"){
+    km_formula = as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~ 1"))
+    km_fit = survival::survfit(km_formula, data = data)
+    km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
+                          surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
+    colnames(km_data)[1] = cens_name
+    data <- data %>% left_join(km_data, by = cens_name)
+    weights = weights*data$surv_km
+  }else if(stabilize_weights == "Mean"){
+    weights = weights*mean(data[cens_name] %>% unlist())
+  }
+
 
   # thresholding
   if(!is.null(weights_threshold)){
@@ -147,14 +152,14 @@ aipw_censored <- function(formula,
   sigma2 = model_est_cc$sigma_est
 
   #### Find Psi for the CC Estimator
-  psi_all = apply(data, 1, function(temp){
-    # print("hi")
-    psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                  starting_vals, m_func, cov_dist_params$mu_joint,
-                  cov_dist_params$Sigma_joint, sigma2)
-  }) %>% t() %>% as.data.frame()
-  colnames(psi_all) = paste0("psi", seq(1:length(starting_vals)))
-  data = cbind(data, psi_all)
+  # psi_all = apply(data, 1, function(temp){
+  #   # print("hi")
+  #   psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+  #                 starting_vals, m_func, cov_dist_params$mu_joint,
+  #                 cov_dist_params$Sigma_joint, sigma2)
+  # }) %>% t() %>% as.data.frame()
+  # colnames(psi_all) = paste0("psi", seq(1:length(starting_vals)))
+  # data = cbind(data, psi_all)
 
   if(endsWith(cov_dist_opt, "MVN")){
     multiroot_results = rootSolve::multiroot(multiroot_func_mvn,

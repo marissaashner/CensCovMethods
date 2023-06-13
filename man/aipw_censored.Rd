@@ -20,6 +20,7 @@ aipw_censored(
   cov_vars,
   cov_mean_user = NULL,
   cov_sigma_user = NULL,
+  stabilize_weights,
   ...
 )
 }
@@ -53,6 +54,8 @@ aipw_censored(
 \item{cov_mean_user}{if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.}
 
 \item{cov_sigma_user}{if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.}
+
+\item{stabilize_weights}{one of \code{c("None", "Mean", "KM")}}
 
 \item{...}{additional arguments passed to function \code{multiroot}.}
 }
