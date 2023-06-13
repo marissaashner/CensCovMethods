@@ -16,6 +16,7 @@ aipw_censored(
   weights_user = NULL,
   weights_cov = NULL,
   weights_threshold = NULL,
+  weight_stabilize = "None",
   cov_dist_opt = "MVN",
   cov_vars,
   cov_mean_user = NULL,
@@ -47,6 +48,8 @@ aipw_censored(
 
 \item{weights_threshold}{the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.}
 
+\item{weight_stabilize}{a character string indicating which method of weight stabilization is to be done (if any). One of \code{c("Mean", "KM", "None")}.}
+
 \item{cov_dist_opt}{a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"}
 
 \item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.}
@@ -54,8 +57,6 @@ aipw_censored(
 \item{cov_mean_user}{if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.}
 
 \item{cov_sigma_user}{if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.}
-
-\item{stabilize_weights}{one of \code{c("None", "Mean", "KM")}}
 
 \item{...}{additional arguments passed to function \code{multiroot}.}
 }

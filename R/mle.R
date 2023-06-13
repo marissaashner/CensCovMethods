@@ -21,9 +21,9 @@
 #' \item{iteration_count}{the number of iterations used in \code{multiroot}.}
 #'
 #' @import tidyverse
-#' @import numDeriv
-#' @import survival
 #' @import rootSolve
+#' @import survival
+#' @import numDeriv
 #'
 #' @export
 mle_censored <- function(formula,

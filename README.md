@@ -1,12 +1,9 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# CensCovMethods
+# CensCovMethods: Consistent parameter estimation with censored covariates in R
 
-<!-- badges: start -->
-<!-- badges: end -->
-
-The goal of CensCovMethods is to …
+Marissa C. Ashner and Tanya P. Garcia
 
 ## Installation
 
@@ -15,30 +12,78 @@ You can install the development version of CensCovMethods from
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("marissaashner/CensCovMethods")
+#devtools::install_github("marissaashner/CensCovMethods")
 ```
 
-## Example
+## Data Generation
 
-This is a basic example which shows you how to solve a common problem:
+To illustrate the functions in CensCovMethods, let’s simulate a dataset
+for a sample of *n* = 500 observations under ( ∼ 40%) random right
+censoring. Specifically,
+
+-   $X $
+-   $C $
+-   $Z $
+-   *ϵ* ∼ *N*(0, 1)
+-   *Y* = *X* + *Z* + *ϵ*
+-   *W* = min (*X*, *C*)
+-   *Δ* = *I*(*X* ≤ *C*).
 
 ``` r
 library(CensCovMethods)
-## basic example code
+#> Warning: replacing previous import 'numDeriv::hessian' by 'rootSolve::hessian'
+#> when loading 'CensCovMethods'
+
+### Generate Data 
+n = 500
+r = 0.4
+X = rnorm(n, 0, 1)
+C = rnorm(n, 0, 1)
+Z = rnorm(n, 0, 1)
+e = rnorm(n, 0, 1)
+Y = X + Z + e
+W = pmin(X, C)
+D = ifelse(X <= C, 1, 0)
+data_sample = data.frame(Y, W, D, Z)
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
+## Complete Case Analysis
 
 ``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
+# cc_estimate = cc_censored(formula = Y ~ beta[1]*W + beta[2] + beta[3]*Z,
+#                           cens_ind = "D", 
+#                           data = data_sample, 
+#                           starting_vals = c(0,0,0), 
+#                           par_vec = "beta",
+#                           sandwich_se = TRUE)
+```
+
+## Inverse Probability Weighting
+
+``` r
+# ipw_estimate = ipw_censored(formula = Y ~ beta[1]*W + beta[2] + beta[3]*Z,
+#                           cens_ind = "D", 
+#                           cens_name = "W",
+#                           data = data_sample, 
+#                           starting_vals = c(0,0,0), 
+#                           par_vec = "beta",
+#                           sandwich_se = TRUE,
+#                           weight_opt = "MVN", 
+#                           weights_cov = "Z", 
+#                           weights_threshold = 25,
+#                           weight_stabilize = "KM")
+```
+
+## Augmented Inverse Probability Weighting
+
+``` r
+# aipw_estimate = aipw_censored()
+```
+
+## Maximum Likelihood
+
+``` r
+# mle_estimate = mle_censored()
 ```
 
 You’ll still need to render `README.Rmd` regularly, to keep `README.md`

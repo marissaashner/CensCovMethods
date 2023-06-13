@@ -16,7 +16,9 @@
 #'
 #'
 #' @import tidyverse
+#' @import rootSolve
 #' @import numDeriv
+#' @importFrom magrittr `%>%`
 #'
 #' @export
 cc_censored <- function(formula,
@@ -106,7 +108,7 @@ cc_sandwich <- function(formula,
     j = numDeriv::jacobian(m_func, p)[1:length(beta_est)]
 
     rep(data[cens_ind], length(beta_est)) %>% as.numeric()*
-      ((numDeriv::hessian(m_func, p)[1:length(beta_est), 1:length(beta_est)]*
+      ((rootSolve::hessian(m_func, p)[1:length(beta_est), 1:length(beta_est)]*
       rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()) -
       outer(j,j)) %>% as.numeric()
   }

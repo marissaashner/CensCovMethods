@@ -8,11 +8,12 @@
 #' @param cens_name a character string indicating the name of censored covariate from \code{data}
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param starting_vals the starting values for the least squares algorithm. Must be a vector equal in length of the parameter vector
-#' @param sandwich_se if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated
+#' @param sandwich_se if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated. Otherwise, \code{NULL}.
 #' @param weight_opt a character string indicating which method of weight calculation is to be done. One of "Cox", "AFT_lognormal", "MVN", "user" (if "user", then user provides weights)
 #' @param weights_user if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default)
-#' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}
+#' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}. For the \code{"MVN"} option, only one covariate can be considered as a predictor for weight estimation.
 #' @param weights_threshold the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.
+#' @param weight_stabilize a character string indicating which method of weight stabilization is to be done (if any). One of \code{c("Mean", "KM", "None")}.
 #'
 #' @return A list with the following elements:
 #' \item{beta_est}{a vector of the parameter estimates.}
@@ -20,9 +21,9 @@
 #'
 #'
 #' @import tidyverse
-#' @import numDeriv
-#' @import survival
 #' @import rootSolve
+#' @import survival
+#' @import numDeriv
 #'
 #' @export
 ipw_censored <- function(formula,
@@ -35,11 +36,10 @@ ipw_censored <- function(formula,
                         weight_opt,
                         weights_user = NULL,
                         weights_cov = NULL,
-                        weights_threshold = NULL){
+                        weights_threshold = NULL,
+                        weight_stabilize = "None"){
 
   # Need to add error checks
-
-  # add thresholding options
 
   # weights
   if(weight_opt == "user"){
@@ -58,15 +58,17 @@ ipw_censored <- function(formula,
   }
 
   # stabilize weights
-  # maybe add option for this
-  # km_formula = as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~ 1"))
-  # km_fit = survival::survfit(km_formula, data = data)
-  # km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
-  #                       surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
-  # colnames(km_data)[1] = cens_name
-  # data <- data %>% left_join(km_data, by = cens_name)
-  # weights = weights*data$surv_km
-  weights = weights*mean(data[cens_name] %>% unlist())
+  if(weight_stabilize == "KM"){
+    km_formula = as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~ 1"))
+    km_fit = survival::survfit(km_formula, data = data)
+    km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
+                          surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
+    colnames(km_data)[1] = cens_name
+    data <- data %>% left_join(km_data, by = cens_name)
+    weights = weights*data$surv_km
+  }else if(weight_stabilize == "Mean"){
+    weights = weights*mean(data[cens_name] %>% unlist())
+  }
 
   # thresholding
   if(!is.null(weights_threshold)){
@@ -77,8 +79,6 @@ ipw_censored <- function(formula,
   start = list(temp = starting_vals)
   names(start) = par_vec
   data$nls_weights = (data[cens_ind] %>% unlist)*weights
-  #data$D = data[cens_ind]
-  #data$weights = weights
   model_est <- nls(formula,
                           data = data,
                           start = start,

@@ -12,3 +12,5 @@ LazyData: true
 URL: https://github.com/marissaashner/CensCovMethods
 BugReports: https://github.com/marissaashner/CensCovMethods/issues
 RoxygenNote: 7.1.2
+Imports: 
+    magrittr

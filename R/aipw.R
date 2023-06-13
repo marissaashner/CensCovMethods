@@ -13,11 +13,11 @@
 #' @param weights_user if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default).
 #' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.
 #' @param weights_threshold the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.
+#' @param weight_stabilize a character string indicating which method of weight stabilization is to be done (if any). One of \code{c("Mean", "KM", "None")}.
 #' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
 #' @param cov_mean_user if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
 #' @param cov_sigma_user if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
-#' @param stabilize_weights one of \code{c("None", "Mean", "KM")}
 #' @param ... additional arguments passed to function \code{multiroot}.
 #'
 #' @return A list with the following elements:
@@ -26,9 +26,9 @@
 #' \item{iteration_count}{the number of iterations used in \code{multiroot}.}
 #'
 #' @import tidyverse
-#' @import numDeriv
-#' @import survival
 #' @import rootSolve
+#' @import survival
+#' @import numDeriv
 #'
 #' @export
 aipw_censored <- function(formula,
@@ -42,6 +42,7 @@ aipw_censored <- function(formula,
                          weights_user = NULL,
                          weights_cov = NULL,
                          weights_threshold = NULL,
+                         weight_stabilize = "None",
                          cov_dist_opt = "MVN",
                          cov_vars,
                          cov_mean_user = NULL,
@@ -66,7 +67,7 @@ aipw_censored <- function(formula,
   }
 
   #stabilize weights
-  if(stabilize_weights == "KM"){
+  if(weight_stabilize == "KM"){
     km_formula = as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~ 1"))
     km_fit = survival::survfit(km_formula, data = data)
     km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
@@ -74,7 +75,7 @@ aipw_censored <- function(formula,
     colnames(km_data)[1] = cens_name
     data <- data %>% left_join(km_data, by = cens_name)
     weights = weights*data$surv_km
-  }else if(stabilize_weights == "Mean"){
+  }else if(weight_stabilize == "Mean"){
     weights = weights*mean(data[cens_name] %>% unlist())
   }
 
@@ -150,16 +151,6 @@ aipw_censored <- function(formula,
                              sandwich_se = FALSE)
   starting_vals = model_est_cc$beta_est %>% as.numeric()
   sigma2 = model_est_cc$sigma_est
-
-  #### Find Psi for the CC Estimator
-  # psi_all = apply(data, 1, function(temp){
-  #   # print("hi")
-  #   psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-  #                 starting_vals, m_func, cov_dist_params$mu_joint,
-  #                 cov_dist_params$Sigma_joint, sigma2)
-  # }) %>% t() %>% as.data.frame()
-  # colnames(psi_all) = paste0("psi", seq(1:length(starting_vals)))
-  # data = cbind(data, psi_all)
 
   if(endsWith(cov_dist_opt, "MVN")){
     multiroot_results = rootSolve::multiroot(multiroot_func_mvn,
