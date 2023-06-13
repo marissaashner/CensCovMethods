@@ -130,7 +130,7 @@ ipw_sandwich <- function(formula,
 
   cmd <- tail(as.character(formula),1)
   exp <- parse(text=cmd)
-  exp_nobracket <- exp %>% as.character() %>% str_remove_all(., "\\[|\\]") %>%
+  exp_nobracket <- exp %>% as.character() %>% stringr::str_remove_all(., "\\[|\\]") %>%
     parse(text = .)
   m_func = function(p){
     with(as.list(p),

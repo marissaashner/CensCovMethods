@@ -134,7 +134,7 @@ aipw_censored <- function(formula,
   # turn formula into function
   cmd <- tail(as.character(formula),1)
   exp <- parse(text=cmd)
-  exp_nobracket <- exp %>% as.character() %>% str_remove_all(., "\\[|\\]") %>%
+  exp_nobracket <- exp %>% as.character() %>% stringr::str_remove_all(., "\\[|\\]") %>%
     parse(text = .)
   m_func = function(p){
     with(as.list(p),
@@ -217,7 +217,7 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
 
   cmd <- tail(as.character(formula),1)
   exp <- parse(text=cmd)
-  exp_nobracket <- exp %>% as.character() %>% str_remove_all(., "\\[|\\]") %>%
+  exp_nobracket <- exp %>% as.character() %>% stringr::str_remove_all(., "\\[|\\]") %>%
     parse(text = .)
   m_func = function(p){
     with(as.list(p),
