@@ -31,7 +31,7 @@ cc_censored <- function(formula,
   # Need to add error checks
 
   # subset to those that are not censored
-  data_cc <- data %>% filter(.[[cens_ind]] == 1)
+  data_cc <- data %>% dplyr::filter(.[[cens_ind]] == 1)
 
   # run nls
   start = list(temp = starting_vals)
