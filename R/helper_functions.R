@@ -65,6 +65,39 @@ weights_mvn <- function(data, cens_ind, weights_cov, cens_name){
   return(return_list)
 }
 
+weights_aft_acc <- function(data, cens_ind, weights_cov, Y, cens_name){
+  ### For DELTA = 1
+  aft_formula_c <- as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~",
+                                    paste(colnames(data %>% select(all_of(Y), all_of(weights_cov))),
+                                          collapse = "+")))
+  model_est_c_yz = survival::survreg(aft_formula_c,
+                                     data = data,
+                                     dist = "lognormal")
+  model_est_c_yz_coeff = model_est_c_yz$coefficients
+  model_est_c_yz_sd = model_est_c_yz$scale
+  YZ = data %>% select(all_of(Y), all_of(weights_cov)) %>% as.matrix()
+  YZ = cbind(rep(1, ncol(YZ)), YZ)
+  weights_d1 = pnorm(log(data[cens_name] %>% unlist()), mean = YZ %*% model_est_c_yz_coeff,
+                     sd = model_est_c_yz_sd,
+                     lower.tail = FALSE)
+
+  ### For DELTA = 0
+  aft_formula_x <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
+                                    paste(colnames(data %>% select(all_of(Y), all_of(weights_cov))),
+                                          collapse = "+")))
+  model_est_x_yz = survival::survreg(aft_formula_x,
+                                     data = data,
+                                     dist = "lognormal")
+  model_est_x_yz_coeff = model_est_x_yz$coefficients
+  model_est_x_yz_sd = model_est_x_yz$scale
+  weights_d0 = pnorm(log(data[cens_name] %>% unlist()), mean = YZ %*% model_est_x_yz_coeff,
+                     sd = model_est_x_yz_sd,
+                     lower.tail = TRUE)
+
+
+  return(data$D*weights_d1 + (1-data$D)*weights_d0)
+}
+
 # want to make warnings go away on the MVN part
 
 # helper functions for the MVN weights function
@@ -662,5 +695,219 @@ multiroot_func_mle_aft = function(beta_temp, data,
 
 
 
+#####################################
+##### helper functions for ACC  #####
+#####################################
 
+#########################
+##### Psi Functions #####
+#########################
+
+psi_hat_i_mvn_acc <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                          beta_temp, m_func, mu_joint, Sigma_joint, sigma2){
+  denominator =  integrate(integral_func_denom_mvn_acc, 0, Inf, data_row = data, Y = Y,
+                           varNamesRHS = varNamesRHS, par_vec = par_vec,
+                           cens_name = cens_name, cov_vars = cov_vars,
+                           beta_temp = beta_temp, m_func = m_func,
+                           mu_joint = mu_joint, Sigma_joint = Sigma_joint,
+                           sigma2 = sigma2,
+                           rel.tol = .Machine$double.eps^0.1,
+                           subdivisions = 1000)$value
+  if(abs(denominator) < 10e-4){
+    psi = rep(0, length(beta_temp))
+  }else{
+    numerator = lapply(1:length(beta_temp), function(j) {
+      integrate(integral_func_psi_mvn_acc, 0, Inf, data_row = data, Y = Y,
+                varNamesRHS = varNamesRHS, par_vec = par_vec,
+                cens_name = cens_name, cov_vars = cov_vars,
+                beta_temp = beta_temp, m_func = m_func,
+                mu_joint = mu_joint, Sigma_joint = Sigma_joint,
+                sigma2 = sigma2, j = j,
+                rel.tol = .Machine$double.eps^0.1,
+                subdivisions = 1000)$value
+    }) %>% unlist() %>% as.numeric()
+    psi = numerator/denominator
+  }
+  #print(beta_temp)
+  psi
+}
+
+psi_hat_i_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                          beta_temp, m_func, model_est_x_z_coeff,
+                          model_est_x_z_sd, sigma2){
+  denominator =  integrate(integral_func_denom_aft, 0, Inf, data_row = data, Y = Y,
+                           varNamesRHS = varNamesRHS, par_vec = par_vec,
+                           cens_name = cens_name, cov_vars = cov_vars,
+                           beta_temp = beta_temp, m_func = m_func,
+                           model_est_x_z_coeff = model_est_x_z_coeff,
+                           model_est_x_z_sd = model_est_x_z_sd,
+                           sigma2 = sigma2,
+                           rel.tol = .Machine$double.eps^0.1,
+                           subdivisions = 1000)$value
+  if(abs(denominator) < 10e-4){
+    psi = rep(0, length(beta_temp))
+  }else{
+    numerator = lapply(1:length(beta_temp), function(j) {
+      integrate(integral_func_psi_aft, 0, Inf, data_row = data, Y = Y,
+                varNamesRHS = varNamesRHS, par_vec = par_vec,
+                cens_name = cens_name, cov_vars = cov_vars,
+                beta_temp = beta_temp, m_func = m_func,
+                model_est_x_z_coeff = model_est_x_z_coeff,
+                model_est_x_z_sd = model_est_x_z_sd,
+                sigma2 = sigma2, j = j,
+                rel.tol = .Machine$double.eps^0.1,
+                subdivisions = 1000)$value
+    }) %>% unlist() %>% as.numeric()
+    psi = numerator/denominator
+  }
+  #print(beta_temp)
+  psi
+}
+
+##########################################
+##### Integral Denominator Functions #####
+##########################################
+
+integral_func_denom_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                    beta_temp, m_func,
+                                    mu_joint, Sigma_joint, sigma2){
+  value_ts = vector("numeric", length(t))
+  for(i in 1:length(t)){
+    data_row[cens_name] = t[i]
+    p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    m_t = m_func(p)
+    f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+    f_x_z = condMVNorm::dcmvnorm(x = log(data_row[cens_name] %>% as.numeric())[1],
+                                 mean = mu_joint,
+                                 sigma = Sigma_joint,
+                                 dependent.ind = 1,
+                                 given.ind = c(3),
+                                 X.given = c(data_row[cov_vars] %>% as.numeric()))
+    f_c_xz = lapply(t, function(dummy_var)
+      condMVNorm::pcmvnorm(lower = log(data_row[cens_name] %>% as.numeric()), upper = Inf,
+                           mean = mu_joint, sigma = Sigma_joint,
+                           dependent.ind = 2,
+                           given = c(1,3),
+                           X.given = c(log(data_row[cens_name] %>% as.numeric()),
+                                       data_row[cov_vars] %>% as.numeric()))) %>% unlist()
+    value_ts[i] = f_y*f_x_z*f_c_xz/t[i]
+  }
+  value_ts
+}
+
+integral_func_denom_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                    beta_temp, m_func,
+                                    model_est_x_z_coeff, model_est_x_z_sd,
+                                    sigma2){
+  value_ts = vector("numeric", length(t))
+  for(i in 1:length(t)){
+    data_row[cens_name] = t[i]
+    p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    m_t = m_func(p)
+    f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+    f_x_z = dnorm(log(data_row[cens_name]),
+                  mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
+                  sd = model_est_x_z_sd)
+    value_ts[i] = f_y*f_x_z/t[i]
+  }
+  value_ts
+}
+
+########################################
+##### Integral Numerator Functions #####
+########################################
+
+integral_func_psi_mvn_acc <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                  beta_temp, m_func,
+                                  mu_joint, Sigma_joint, j, sigma2){
+  value_ts = vector("numeric", length(t))
+  for(i in 1:length(t)){
+    data_row[cens_name] = t[i]
+    p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    m_t = m_func(p)
+    f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+    f_x_z = condMVNorm::dcmvnorm(x = log(data_row[cens_name] %>% as.numeric())[1],
+                                 mean = mu_joint,
+                                 sigma = Sigma_joint,
+                                 dependent.ind = 1,
+                                 given.ind = c(3),
+                                 X.given = c(data_row[cov_vars] %>% as.numeric()))
+    f_c_xz = lapply(t, function(dummy_var)
+      condMVNorm::pcmvnorm(lower = log(data_row[cens_name] %>% as.numeric()), upper = Inf,
+                           mean = mu_joint, sigma = Sigma_joint,
+                           dependent.ind = 2,
+                           given = c(1,3),
+                           X.given = c(log(data_row[cens_name] %>% as.numeric()),
+                                       data_row[cov_vars] %>% as.numeric()))) %>% unlist()
+    value_ts[i] =
+      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z*f_c_xz/t[i]
+  }
+  value_ts %>% unlist()
+}
+
+integral_func_psi_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                  beta_temp, m_func,
+                                  model_est_x_z_coeff, model_est_x_z_sd, j, sigma2){
+  value_ts = vector("numeric", length(t))
+  for(i in 1:length(t)){
+    data_row[cens_name] = t[i]
+    p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    m_t = m_func(p)
+    f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+    f_x_z = dnorm(log(data_row[cens_name]),
+                  mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
+                  sd = model_est_x_z_sd)
+    value_ts[i] =
+      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z/t[i]
+  }
+  value_ts %>% unlist()
+}
+
+###############################
+##### Multiroot Functions #####
+###############################
+
+# set up multiroot function (the estimating equation we want to find the root of)
+
+##### MVN
+multiroot_func_mvn_acc = function(beta_temp, data,
+                              Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
+                              m_func, mu_joint, Sigma_joint, sigma2){
+  print(beta_temp)
+  pieces = apply(data, 1, function(temp){
+    p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    cc_piece = rep(temp[cens_ind], length(beta_temp))*
+      numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
+      rep(temp[Y]-m_func(p), length(beta_temp))
+    acc_piece = rep(temp[cens_ind]-temp["weights"], length(beta_temp))*
+      psi_hat_i_mvn_acc(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                    beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
+    cc_piece + acc_piece
+  }) %>% unname()
+  rowSums(pieces)
+}
+
+##### AFT
+#multiroot_func_aft_acc = function(beta_temp, data,
+#                              Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
+#                              m_func, model_est_x_z_coeff, model_est_x_z_sd, sigma2){
+#   print(beta_temp)
+#   pieces = apply(data, 1, function(temp){
+#     p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
+#     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+#     ipw_piece = rep(temp[cens_ind]*temp["weights"], length(beta_temp))*
+#       numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
+#       rep(temp[Y]-m_func(p), length(beta_temp))
+#     aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
+#       psi_hat_i_aft(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+#                     beta_temp, m_func, model_est_x_z_coeff, model_est_x_z_sd, sigma2)
+#     ipw_piece + aipw_piece
+#   }) %>% unname()
+#   rowSums(pieces)
+# }
 
