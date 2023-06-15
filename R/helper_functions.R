@@ -38,7 +38,9 @@ weights_aft <- function(data, cens_ind, weights_cov, cens_name){
 weights_mvn <- function(data, cens_ind, weights_cov, cens_name){
   l_all = function(params, data){
     -(apply(data, 1, function(dat)
-      l(params, log(dat[cens_name]), dat[weights_cov], dat[cens_ind])) %>% sum())
+      l(params, log(dat[cens_name] %>% as.numeric()),
+        dat[weights_cov] %>% as.numeric(),
+        dat[cens_ind] %>% as.numeric())) %>% sum())
   }
 
   starting_vals_xcz = c(0,0,0,1,1,1,0,0,0)
@@ -54,11 +56,12 @@ weights_mvn <- function(data, cens_ind, weights_cov, cens_name){
                         nrow = 3))
 
   weights = 1/apply(data, 1, function(dat_row)
-    condMVNorm::pcmvnorm(lower = log(dat_row[cens_name]), upper = Inf,
+    condMVNorm::pcmvnorm(lower = log(dat_row[cens_name]%>% as.numeric()), upper = Inf,
                          mean = mu_joint, sigma = Sigma_joint,
                          dependent.ind = 2,
                          given = c(1,3),
-                         X.given = c(log(dat_row[cens_name]), dat_row[weights_cov])))
+                         X.given = c(log(dat_row[cens_name]%>% as.numeric()),
+                                     dat_row[weights_cov]%>% as.numeric())))
 
   return_list = list(weights = weights, mu_joint = mu_joint, Sigma_joint = Sigma_joint)
 
