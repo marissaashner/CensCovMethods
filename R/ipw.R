@@ -64,7 +64,7 @@ ipw_censored <- function(formula,
     km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
                           surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
     colnames(km_data)[1] = cens_name
-    data <- data %>% dplyr::left_join(km_data, by = cens_name)
+    data <- data %>% dplyr::left_join(km_data %>% unique(), by = cens_name)
     weights = weights*data$surv_km
   }else if(weight_stabilize == "Mean"){
     weights = weights*mean(data[cens_name] %>% unlist())
@@ -142,7 +142,7 @@ ipw_sandwich <- function(formula,
     p = c(beta_est, data[varNamesRHS])%>% as.numeric()
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
-    rep(data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
+    rep(data[[cens_ind]]*data[["weights"]], length(beta_est)) %>% as.numeric()*
       numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
       rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
   }
@@ -154,7 +154,7 @@ ipw_sandwich <- function(formula,
 
     j = numDeriv::jacobian(m_func, p)[1:length(beta_est)]
 
-    rep(data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
+    rep(data[[cens_ind]]*data[["weights"]], length(beta_est)) %>% as.numeric()*
       ((rootSolve::hessian(m_func, p)[1:length(beta_est), 1:length(beta_est)]*
           rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()) -
          outer(j,j)) %>% as.numeric()

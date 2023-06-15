@@ -73,7 +73,7 @@ aipw_censored <- function(formula,
     km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
                           surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
     colnames(km_data)[1] = cens_name
-    data <- data %>% left_join(km_data, by = cens_name)
+    data <- data %>% left_join(km_data %>% unique(), by = cens_name)
     weights = weights*data$surv_km
   }else if(weight_stabilize == "Mean"){
     weights = weights*mean(data[cens_name] %>% unlist())
@@ -231,10 +231,10 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
       p = c(beta_est, data[varNamesRHS]) %>% as.numeric()
       names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
-      ipw_piece = rep(data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
+      ipw_piece = rep(data[[cens_ind]]*data[["weights"]], length(beta_est)) %>% as.numeric()*
         numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
         rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
-      aipw_piece = rep(1 - data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
+      aipw_piece = rep(1 - data[[cens_ind]]*data[["weights"]], length(beta_est)) %>% as.numeric()*
         psi_hat_i_mvn(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                   beta_est, m_func, cov_dist_params$mu_joint, cov_dist_params$Sigma_joint, sigma2)
 
