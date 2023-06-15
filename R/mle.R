@@ -167,7 +167,7 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_
   if(endsWith(cov_dist_opt, "MVN")){
     g = function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                  beta_est, m_func, cens_ind, x_cz_dist_params, sigma2){
-      p = c(beta_est, data[varNamesRHS])
+      p = c(beta_est, data[varNamesRHS])  %>% as.numeric()
       names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
       if(data[cens_ind] == 1){
@@ -182,7 +182,7 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_
   }else if(cov_dist_opt == "AFT"){
     g = function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                  beta_est, m_func, cens_ind, x_cz_dist_params, sigma2){
-      p = c(beta_est, data[varNamesRHS])
+      p = c(beta_est, data[varNamesRHS])  %>% as.numeric()
       names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
       if(data[cens_ind] == 1){

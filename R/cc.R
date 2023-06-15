@@ -92,7 +92,7 @@ cc_sandwich <- function(formula,
 
   # create "g" function for the sandwich estimator
   g = function(data, beta_est, m_func, par_vec, varNamesRHS, cens_ind){
-    p = c(beta_est, data[varNamesRHS])
+    p = c(beta_est, data[varNamesRHS]) %>% as.numeric()
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
     rep(data[cens_ind], length(beta_est)) %>% as.numeric()*
@@ -102,7 +102,7 @@ cc_sandwich <- function(formula,
 
   # jacobian g function
   g_jacobian = function(data, beta_est, m_func, par_vec, varNamesRHS, cens_ind){
-    p = c(beta_est, data[varNamesRHS])
+    p = c(beta_est, data[varNamesRHS]) %>% as.numeric()
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
     j = numDeriv::jacobian(m_func, p)[1:length(beta_est)]
