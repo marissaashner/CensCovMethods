@@ -172,7 +172,7 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_
 
       if(data[cens_ind] == 1){
         numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
-          rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
+          rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
       }else{
         psi_hat_i_mle_mvn(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                       beta_est, m_func, x_cz_dist_params$mu_joint,
@@ -187,7 +187,7 @@ mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_
 
       if(data[cens_ind] == 1){
         numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
-          rep(data[Y]-m_func(p), length(beta_est)) %>% as.numeric()
+          rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
       }else{
         psi_hat_i_mle_aft(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                       beta_est, m_func, x_cz_dist_params$model_est_x_z_coeff,
