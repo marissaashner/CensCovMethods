@@ -20,15 +20,17 @@ weights_cox <- function(data, cens_ind, weights_cov, cens_name){
 
 weights_aft <- function(data, cens_ind, weights_cov, cens_name){
   aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~",
-                                  paste(colnames(data %>% dplyr::select(all_of(weights_cov))),
+                                  paste(colnames(data %>% dplyr::ungroup() %>%
+                                                   dplyr::select(all_of(weights_cov))),
                                         collapse = "+")))
   model_est_c_z = survival::survreg(aft_formula,
                                     data = data,
                                     dist = "lognormal")
   model_est_c_z_coeff = model_est_c_z$coefficients
   model_est_c_z_sd = model_est_c_z$scale
-  Z = data %>% dplyr::select(all_of(weights_cov)) %>% as.matrix()
-  Z = cbind(rep(1, ncol(Z)), Z)
+  Z = data %>% dplyr::ungroup() %>%
+    dplyr::select(all_of(weights_cov)) %>% as.matrix()
+  Z = cbind(rep(1, nrow(Z)), Z)
   weights = 1/pnorm(log(data[cens_name] %>% unlist()), mean = Z %*% model_est_c_z_coeff,
                     sd = model_est_c_z_sd,
                     lower.tail = FALSE)
@@ -71,15 +73,18 @@ weights_mvn <- function(data, cens_ind, weights_cov, cens_name){
 weights_aft_acc <- function(data, cens_ind, weights_cov, Y, cens_name){
   ### For DELTA = 1
   aft_formula_c <- as.formula(paste("survival::Surv(", cens_name, ", 1-", cens_ind, ") ~",
-                                    paste(colnames(data %>% dplyr::select(all_of(Y), all_of(weights_cov))),
+                                    paste(colnames(data %>% dplyr::ungroup() %>%
+                                                     dplyr::select(all_of(Y),
+                                                                   all_of(weights_cov))),
                                           collapse = "+")))
   model_est_c_yz = survival::survreg(aft_formula_c,
                                      data = data,
                                      dist = "lognormal")
   model_est_c_yz_coeff = model_est_c_yz$coefficients
   model_est_c_yz_sd = model_est_c_yz$scale
-  YZ = data %>% dplyr::select(all_of(Y), all_of(weights_cov)) %>% as.matrix()
-  YZ = cbind(rep(1, ncol(YZ)), YZ)
+  YZ = data %>% dplyr::ungroup() %>%
+    dplyr::select(all_of(Y), all_of(weights_cov)) %>% as.matrix()
+  YZ = cbind(rep(1, nrow(YZ)), YZ)
   weights_d1 = pnorm(log(data[cens_name] %>% unlist()), mean = YZ %*% model_est_c_yz_coeff,
                      sd = model_est_c_yz_sd,
                      lower.tail = FALSE)
