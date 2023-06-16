@@ -155,11 +155,7 @@ ipw_sandwich <- function(formula,
 
     j = numDeriv::jacobian(m_func, p)[1:length(beta_est)]
 
-    print(rep(as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]),
-        length(beta_est)) %>% as.numeric()*
-      ((rootSolve::hessian(m_func, p)[1:length(beta_est), 1:length(beta_est)]*
-          rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()) -
-         outer(j,j)) %>% as.numeric())
+    print(j)
 
     rep(as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]),
         length(beta_est)) %>% as.numeric()*
