@@ -73,7 +73,7 @@ aipw_censored <- function(formula,
     km_data <- data.frame(W = summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$time,
                           surv_km = (summary(km_fit, times = data[cens_name] %>% unlist(), extend = TRUE)$surv))
     colnames(km_data)[1] = cens_name
-    data <- data %>% left_join(km_data %>% unique(), by = cens_name)
+    data <- data %>% dplyr::left_join(km_data %>% unique(), by = cens_name)
     weights = weights*data$surv_km
   }else if(weight_stabilize == "Mean"){
     weights = weights*mean(data[cens_name] %>% unlist())
