@@ -148,25 +148,39 @@ ipw_sandwich <- function(formula,
       rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
   }
 
-  # jacobian g function
-  g_jacobian = function(data, beta_est, m_func, par_vec, var_namesRHS, cens_ind){
-    p = c(beta_est, data[varNamesRHS]) %>% as.numeric()
-    names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
-    j = numDeriv::jacobian(m_func, p)[1:length(beta_est)]
+  # first derivative function
+  # calculates first derivative for subject i (data x)
+  # f(x;beta) where beta is of length lb, x is a scalar
+  # first derivative = ( f(beta+ delta) - f(beta-delta) )/ (2 * delta)
+  firstderivative <- function(beta, g, data, varNamesRHS, par_vec,
+                              m_func, cens_ind){
+    lb <- length(beta)
+    derivs <- matrix(data = 0, nrow = lb, ncol = lb)
+    delta <- beta * (10 ^ (- 4))
+    betal <- betar <- beta
+    for (i in 1:lb) {
+      # Perturb the ith element of beta
+      betal[i] <- beta[i] - delta[i]
+      betar[i] <- beta[i] + delta[i]
 
-    print(p)
+      # Calculate function values
+      yout1 <- g(data, betal, m_func, par_vec, varNamesRHS, cens_ind)
+      yout2 <- g(data, betar, m_func, par_vec, varNamesRHS, cens_ind)
 
-    rep(as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]),
-        length(beta_est)) %>% as.numeric()*
-      ((rootSolve::hessian(m_func, p)[1:length(beta_est), 1:length(beta_est)]*
-          rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()) -
-         outer(j,j)) %>% as.numeric()
+      # Calculate derivative and save in vector A
+      derivs[i,] <- (yout2 - yout1) / (2 * delta[i])
+
+      # Reset parameter vectors
+      betal <- betar <- beta
+    }
+    #print("hi")
+    return(derivs)
   }
 
   # take the inverse first derivative of g
   first_der <- apply(data, 1, function(temp){
-    g_jacobian(temp, beta_est, m_func, par_vec, var_namesRHS, cens_ind)
+    first_derivative(beta_est, g, temp, var_namesRHS, par_vec, m_func, cens_ind)
   })
   if(length(beta_est) > 1){
     first_der = first_der %>% rowMeans() %>% matrix(nrow = length(beta_est))
