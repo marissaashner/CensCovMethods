@@ -180,7 +180,7 @@ ipw_sandwich <- function(formula,
 
   # take the inverse first derivative of g
   first_der <- apply(data, 1, function(temp){
-    first_derivative(beta_est, g, temp, var_namesRHS, par_vec, m_func, cens_ind)
+    firstderivative(beta_est, g, temp, var_namesRHS, par_vec, m_func, cens_ind)
   })
   if(length(beta_est) > 1){
     first_der = first_der %>% rowMeans() %>% matrix(nrow = length(beta_est))
