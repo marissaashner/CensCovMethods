@@ -231,10 +231,10 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
       p = c(beta_est, data[varNamesRHS]) %>% as.numeric()
       names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
-      ipw_piece = rep(data[[cens_ind]]*data[["weights"]], length(beta_est)) %>% as.numeric()*
+      ipw_piece = rep(as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]), length(beta_est)) %>% as.numeric()*
         numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
         rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
-      aipw_piece = rep(1 - data[[cens_ind]]*data[["weights"]], length(beta_est)) %>% as.numeric()*
+      aipw_piece = rep(1 - as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]), length(beta_est)) %>% as.numeric()*
         psi_hat_i_mvn(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                   beta_est, m_func, cov_dist_params$mu_joint, cov_dist_params$Sigma_joint, sigma2)
 
@@ -246,10 +246,10 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
       p = c(beta_est, data[varNamesRHS])  %>% as.numeric()
       names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
-      ipw_piece = rep(data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
+      ipw_piece = rep(as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]), length(beta_est)) %>% as.numeric()*
         numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
         rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
-      aipw_piece = rep(1 - data[cens_ind]*data["weights"], length(beta_est)) %>% as.numeric()*
+      aipw_piece = rep(1 - as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]), length(beta_est)) %>% as.numeric()*
         psi_hat_i_aft(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                   beta_est, m_func, cov_dist_params$model_est_x_z_coeff,
                   cov_dist_params$model_est_x_z_sd, sigma2)

@@ -459,11 +459,11 @@ multiroot_func_mvn = function(beta_temp, data,
   pieces = apply(data, 1, function(temp){
     p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
-    ipw_piece = rep(temp[cens_ind]*temp["weights"], length(beta_temp))*
+    ipw_piece = rep(as.numeric(temp[[cens_ind]])*as.numeric(temp[["weights"]]), length(beta_temp))*
       numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
       rep(temp[Y]-m_func(p), length(beta_temp))
     # psis = paste0("psi", seq(1:length(beta_temp)))
-    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
+    aipw_piece = rep(1 - as.numeric(temp[[cens_ind]])*as.numeric(temp[["weights"]]), length(beta_temp))*
       psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                 beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
     ipw_piece + aipw_piece
@@ -479,10 +479,10 @@ multiroot_func_aft = function(beta_temp, data,
   pieces = apply(data, 1, function(temp){
     p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
-    ipw_piece = rep(temp[cens_ind]*temp["weights"], length(beta_temp))*
+    ipw_piece = rep(as.numeric(temp[[cens_ind]])*as.numeric(temp[["weights"]]), length(beta_temp))*
       numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
       rep(temp[Y]-m_func(p), length(beta_temp))
-    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
+    aipw_piece = rep(1 - as.numeric(temp[[cens_ind]])*as.numeric(temp[["weights"]]), length(beta_temp))*
       psi_hat_i_aft(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                 beta_temp, m_func, model_est_x_z_coeff, model_est_x_z_sd, sigma2)
     ipw_piece + aipw_piece
