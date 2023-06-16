@@ -421,7 +421,7 @@ integral_func_psi_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
     #                        X.given = c(log(data_row[cens_name] %>% as.numeric()),
     #                                    data_row[cov_vars] %>% as.numeric()))) %>% unlist()
     value_ts[i] =
-      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z/t[i]
+      numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y*f_x_z/t[i]
   }
   value_ts %>% unlist()
 }
@@ -440,7 +440,7 @@ integral_func_psi_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
                   mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
                   sd = model_est_x_z_sd)
     value_ts[i] =
-      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z/t[i]
+      numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y*f_x_z/t[i]
   }
   value_ts %>% unlist()
 }
@@ -461,7 +461,7 @@ multiroot_func_mvn = function(beta_temp, data,
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
     ipw_piece = rep(as.numeric(temp[[cens_ind]])*as.numeric(temp[["weights"]]), length(beta_temp))*
       numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
-      rep(temp[Y]-m_func(p), length(beta_temp))
+      rep(temp[Y] %>% as.numeric()-m_func(p), length(beta_temp))
     # psis = paste0("psi", seq(1:length(beta_temp)))
     aipw_piece = rep(1 - as.numeric(temp[[cens_ind]])*as.numeric(temp[["weights"]]), length(beta_temp))*
       psi_hat_i_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
@@ -481,7 +481,7 @@ multiroot_func_aft = function(beta_temp, data,
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
     ipw_piece = rep(as.numeric(temp[[cens_ind]])*as.numeric(temp[["weights"]]), length(beta_temp))*
       numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
-      rep(temp[Y]-m_func(p), length(beta_temp))
+      rep(temp[Y] %>% as.numeric()-m_func(p), length(beta_temp))
     aipw_piece = rep(1 - as.numeric(temp[[cens_ind]])*as.numeric(temp[["weights"]]), length(beta_temp))*
       psi_hat_i_aft(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                 beta_temp, m_func, model_est_x_z_coeff, model_est_x_z_sd, sigma2)
@@ -630,7 +630,7 @@ integral_func_psi_mle_mvn <- function(t, data_row, Y, varNamesRHS, par_vec, cens
                                   X.given = c(log(C_val),
                                               data_row[cov_vars] %>% as.numeric()))
     value_ts[i] =
-      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_cz/t[i]
+      numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y*f_x_cz/t[i]
   }
   value_ts %>% unlist()
 }
@@ -649,7 +649,7 @@ integral_func_psi_mle_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens
                    mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
                    sd = model_est_x_z_sd)
     value_ts[i] =
-      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_cz/t[i]
+      numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y*f_x_cz/t[i]
   }
   value_ts %>% unlist()
 }
@@ -669,7 +669,7 @@ multiroot_func_mle_mvn = function(beta_temp, data,
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
     if(temp[cens_ind] == 1){
       piece = numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
-        rep(temp[Y]-m_func(p), length(beta_temp))
+        rep(temp[Y] %>% as.numeric()-m_func(p), length(beta_temp))
     }else{
       piece = psi_hat_i_mle_mvn(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                             beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
@@ -689,7 +689,7 @@ multiroot_func_mle_aft = function(beta_temp, data,
       names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
       if(temp[cens_ind] == 1){
         piece = numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
-          rep(temp[Y]-m_func(p), length(beta_temp))
+          rep(temp[Y] %>% as.numeric()-m_func(p), length(beta_temp))
       }else{
         piece = psi_hat_i_mle_aft(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                               beta_temp, model_est_x_z_coeff, model_est_x_z_sd, sigma2)
@@ -849,7 +849,7 @@ integral_func_psi_mvn_acc <- function(t, data_row, Y, varNamesRHS, par_vec, cens
                                   X.given = c(log(data_row[cens_name] %>% as.numeric()),
                                               data_row[cov_vars] %>% as.numeric()))
     value_ts[i] =
-      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z*f_c_xz/t[i]
+      numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y*f_x_z*f_c_xz/t[i]
   }
   value_ts %>% unlist()
 }
@@ -868,7 +868,7 @@ integral_func_psi_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
                   mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
                   sd = model_est_x_z_sd)
     value_ts[i] =
-      numDeriv::jacobian(m_func, p)[j]*(data_row[Y]-m_t)*f_y*f_x_z/t[i]
+      numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y*f_x_z/t[i]
   }
   value_ts %>% unlist()
 }
@@ -889,7 +889,7 @@ multiroot_func_mvn_acc = function(beta_temp, data,
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
     cc_piece = rep(temp[cens_ind], length(beta_temp))*
       numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
-      rep(temp[Y]-m_func(p), length(beta_temp))
+      rep(temp[Y] %>% as.numeric()-m_func(p), length(beta_temp))
     acc_piece = rep(temp[cens_ind]-temp["weights"], length(beta_temp))*
       psi_hat_i_mvn_acc(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                     beta_temp, m_func, mu_joint, Sigma_joint, sigma2)
