@@ -112,12 +112,8 @@ ipw_sandwich <- function(formula,
   #convert beta_est to numeric
   beta_est = beta_est %>% as.numeric()
 
-  print(beta_est)
-
   # add weights to data frame
   data$weights = weights
-
-  print(weights)
 
   # extract variable names from formula
   varNames = all.vars(formula)
@@ -158,6 +154,12 @@ ipw_sandwich <- function(formula,
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
     j = numDeriv::jacobian(m_func, p)[1:length(beta_est)]
+
+    print(rep(as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]),
+        length(beta_est)) %>% as.numeric()*
+      ((rootSolve::hessian(m_func, p)[1:length(beta_est), 1:length(beta_est)]*
+          rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()) -
+         outer(j,j)) %>% as.numeric())
 
     rep(as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]),
         length(beta_est)) %>% as.numeric()*
