@@ -112,8 +112,12 @@ ipw_sandwich <- function(formula,
   #convert beta_est to numeric
   beta_est = beta_est %>% as.numeric()
 
+  print(beta_est)
+
   # add weights to data frame
   data$weights = weights
+
+  print(weights)
 
   # extract variable names from formula
   varNames = all.vars(formula)
@@ -173,6 +177,8 @@ ipw_sandwich <- function(formula,
   }
   inv_first_der <- solve(first_der)
 
+  print(inv_first_der)
+
   # need to get the outer product of g at each observation and take the mean
   gs = apply(data, 1, function(temp)
     g(temp, beta_est, m_func, par_vec, var_namesRHS, cens_ind))
@@ -184,6 +190,7 @@ ipw_sandwich <- function(formula,
     outer_prod = outer_prod %>% mean()
   }
 
+  print(outer_prod)
 
   ## then need to put it all together
   se = sqrt((inv_first_der %*% outer_prod %*% t(inv_first_der) / nrow(data)) %>% diag())
