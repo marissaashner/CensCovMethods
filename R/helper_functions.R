@@ -388,6 +388,7 @@ integral_func_denom_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_n
     f_x_z = dnorm(log(data_row[cens_name] %>% as.numeric()),
           mean = c(1, data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
           sd = model_est_x_z_sd)
+    print(f_x_z)
     value_ts[i] = f_y*f_x_z/t[i]
   }
   value_ts
