@@ -741,7 +741,7 @@ psi_hat_i_mvn_acc <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars
   psi
 }
 
-psi_hat_i_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+psi_hat_i_aft_acc <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                           beta_temp, m_func, model_est_x_z_coeff,
                           model_est_x_z_sd, sigma2){
   denominator =  integrate(integral_func_denom_aft, 0, Inf, data_row = data, Y = Y,
@@ -804,7 +804,7 @@ integral_func_denom_mvn_acc <- function(t, data_row, Y, varNamesRHS, par_vec, ce
   value_ts
 }
 
-integral_func_denom_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+integral_func_denom_aft_acc <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                                     beta_temp, m_func,
                                     model_est_x_z_coeff, model_est_x_z_sd,
                                     sigma2){
@@ -855,7 +855,7 @@ integral_func_psi_mvn_acc <- function(t, data_row, Y, varNamesRHS, par_vec, cens
   value_ts %>% unlist()
 }
 
-integral_func_psi_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+integral_func_psi_aft_acc <- function(t, data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                                   beta_temp, m_func,
                                   model_est_x_z_coeff, model_est_x_z_sd, j, sigma2){
   value_ts = vector("numeric", length(t))
