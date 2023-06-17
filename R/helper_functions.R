@@ -386,7 +386,7 @@ integral_func_denom_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_n
     m_t = m_func(p)
     f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
     f_x_z = dnorm(log(data_row[cens_name] %>% as.numeric()),
-          mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
+          mean = c(1, data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
           sd = model_est_x_z_sd)
     value_ts[i] = f_y*f_x_z/t[i]
   }
@@ -437,7 +437,7 @@ integral_func_psi_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
     m_t = m_func(p)
     f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
     f_x_z = dnorm(log(data_row[cens_name] %>% as.numeric()),
-                  mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
+                  mean = c(1, data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
                   sd = model_est_x_z_sd)
     value_ts[i] =
       numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y*f_x_z/t[i]
