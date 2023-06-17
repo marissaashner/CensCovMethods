@@ -104,7 +104,7 @@ aipw_censored <- function(formula,
     Sigma_joint = cov_sigma_user
     cov_dist_params = list(mu_joint = mu_joint,
                            Sigma_joint = Sigma_joint)
-  }else if(cov_dist_opt == "AFT"){
+  }else if(cov_dist_opt == "AFT_lognormal"){
     ## want to estimate the parameters using AFT
     aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
                                     paste(colnames(data %>% select(all_of(cov_vars))),
