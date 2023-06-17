@@ -160,7 +160,7 @@ aipw_censored <- function(formula,
                                              m_func = m_func, mu_joint = mu_joint,
                                              Sigma_joint = Sigma_joint, sigma2 = sigma2,
                                              start = starting_vals, ...)
-  }else if(cov_dist_opt == "AFT"){
+  }else if(cov_dist_opt == "AFT_lognormal"){
     multiroot_results = rootSolve::multiroot(multiroot_func_aft,
                                              data = data,
                                              Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
