@@ -385,7 +385,7 @@ integral_func_denom_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_n
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
     m_t = m_func(p)
     f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
-    f_x_z = dnorm(log(data_row[cens_name]),
+    f_x_z = dnorm(log(data_row[cens_name] %>% as.numeric()),
           mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
           sd = model_est_x_z_sd)
     value_ts[i] = f_y*f_x_z/t[i]
@@ -436,7 +436,7 @@ integral_func_psi_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
     m_t = m_func(p)
     f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
-    f_x_z = dnorm(log(data_row[cens_name]),
+    f_x_z = dnorm(log(data_row[cens_name] %>% as.numeric()),
                   mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
                   sd = model_est_x_z_sd)
     value_ts[i] =
@@ -600,7 +600,7 @@ integral_func_denom_mle_aft <- function(t, data_row, Y, varNamesRHS, par_vec, ce
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
     m_t = m_func(p)
     f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
-    f_x_cz = dnorm(log(data_row[cens_name]),
+    f_x_cz = dnorm(log(data_row[cens_name] %>% as.numeric()),
                    mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
                    sd = model_est_x_z_sd)
     value_ts[i] = f_y*f_x_cz/t[i]
@@ -645,7 +645,7 @@ integral_func_psi_mle_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
     m_t = m_func(p)
     f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
-    f_x_cz = dnorm(log(data_row[cens_name]),
+    f_x_cz = dnorm(log(data_row[cens_name] %>% as.numeric()),
                    mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
                    sd = model_est_x_z_sd)
     value_ts[i] =
@@ -814,7 +814,7 @@ integral_func_denom_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_n
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
     m_t = m_func(p)
     f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
-    f_x_z = dnorm(log(data_row[cens_name]),
+    f_x_z = dnorm(log(data_row[cens_name] %>% as.numeric()),
                   mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
                   sd = model_est_x_z_sd)
     value_ts[i] = f_y*f_x_z/t[i]
@@ -864,7 +864,7 @@ integral_func_psi_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens_nam
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
     m_t = m_func(p)
     f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
-    f_x_z = dnorm(log(data_row[cens_name]),
+    f_x_z = dnorm(log(data_row[cens_name] %>% as.numeric()),
                   mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
                   sd = model_est_x_z_sd)
     value_ts[i] =
