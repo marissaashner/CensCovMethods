@@ -291,7 +291,7 @@ psi_hat_i_mvn <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                            sigma2 = sigma2,
                            rel.tol = .Machine$double.eps^0.1,
                            subdivisions = 1000)$value
-  if(abs(denominator) < 10e-4){
+  if(abs(denominator) < 10e-16){
     psi = rep(0, length(beta_temp))
   }else{
     numerator = lapply(1:length(beta_temp), function(j) {
@@ -322,7 +322,7 @@ psi_hat_i_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                            sigma2 = sigma2,
                            rel.tol = .Machine$double.eps^0.1,
                            subdivisions = 1000)$value
-  if(abs(denominator) < 10e-4){
+  if(abs(denominator) < 10e-16){
     psi = rep(0, length(beta_temp))
   }else{
     numerator = lapply(1:length(beta_temp), function(j) {
@@ -511,7 +511,7 @@ psi_hat_i_mle_mvn <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars
                            sigma2 = sigma2,
                            rel.tol = .Machine$double.eps^0.1,
                            subdivisions = 1000)$value
-  if(abs(denominator) < 10e-4){
+  if(abs(denominator) < 10e-16){
     psi = rep(0, length(beta_temp))
   }else{
     numerator = lapply(1:length(beta_temp), function(j) {
@@ -544,7 +544,7 @@ psi_hat_i_mle_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars
                            sigma2 = sigma2,
                            rel.tol = .Machine$double.eps^0.1,
                            subdivisions = 1000)$value
-  if(abs(denominator) < 10e-4){
+  if(abs(denominator) < 10e-16){
     psi = rep(0, length(beta_temp))
   }else{
     numerator = lapply(1:length(beta_temp), function(j) {
@@ -722,7 +722,7 @@ psi_hat_i_mvn_acc <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars
                            sigma2 = sigma2,
                            rel.tol = .Machine$double.eps^0.1,
                            subdivisions = 1000)$value
-  if(abs(denominator) < 10e-4){
+  if(abs(denominator) < 10e-16){
     psi = rep(0, length(beta_temp))
   }else{
     numerator = lapply(1:length(beta_temp), function(j) {
@@ -753,7 +753,7 @@ psi_hat_i_aft_acc <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars
                            sigma2 = sigma2,
                            rel.tol = .Machine$double.eps^0.1,
                            subdivisions = 1000)$value
-  if(abs(denominator) < 10e-4){
+  if(abs(denominator) < 10e-16){
     psi = rep(0, length(beta_temp))
   }else{
     numerator = lapply(1:length(beta_temp), function(j) {
