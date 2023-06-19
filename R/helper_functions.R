@@ -555,7 +555,7 @@ psi_hat_i_mle_mvn <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars
 
 psi_hat_i_mle_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                               beta_temp, m_func, model_est_x_z_coeff, model_est_x_z_sd, sigma2){
-  denominator =  integrate(integral_func_denom_mle, data[cens_name] %>% as.numeric(),
+  denominator =  integrate(integral_func_denom_mle_aft, data[cens_name] %>% as.numeric(),
                            Inf, data_row = data, Y = Y,
                            varNamesRHS = varNamesRHS, par_vec = par_vec,
                            cens_name = cens_name, cov_vars = cov_vars,
@@ -569,7 +569,7 @@ psi_hat_i_mle_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars
     psi = rep(0, length(beta_temp))
   }else{
     numerator = lapply(1:length(beta_temp), function(j) {
-      integrate(integral_func_psi_mle, data[cens_name] %>% as.numeric(),
+      integrate(integral_func_psi_mle_aft, data[cens_name] %>% as.numeric(),
                 Inf, data_row = data, Y = Y,
                 varNamesRHS = varNamesRHS, par_vec = par_vec,
                 cens_name = cens_name, cov_vars = cov_vars,
