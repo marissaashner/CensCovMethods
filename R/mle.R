@@ -56,7 +56,8 @@ mle_censored <- function(formula,
   }else if(cov_dist_opt == "AFT_lognormal"){
     ## want to estimate the parameters using AFT
     aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
-                                    paste(colnames(data %>% dplyr::select(all_of(cov_vars))),
+                                    paste(colnames(data %>% ungroup() %>%
+                                                     dplyr::select(all_of(cov_vars))),
                                           collapse = "+")))
     model_est_x_z = survreg(aft_formula,
                             data = data,
@@ -66,6 +67,8 @@ mle_censored <- function(formula,
     x_cz_dist_params = list(model_est_x_z_coeff = model_est_x_z_coeff,
                             model_est_x_z_sd = model_est_x_z_sd)
   }
+
+  print("Covariate Distribution Estimated!")
 
   # extract variable names from formula
   varNames = all.vars(formula)
@@ -118,6 +121,8 @@ mle_censored <- function(formula,
   names(beta_est) = paste0(par_vec, seq(1:length(beta_est)))
 
   iteration_count = multiroot_results$iter
+
+  print("Parameters Estimated!")
 
   # run sandwich estimator
   if(sandwich_se){
