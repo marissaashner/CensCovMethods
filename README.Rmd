@@ -13,22 +13,22 @@ knitr::opts_chunk$set(
 )
 ```
 
-# CensCovMethods: Consistent parameter estimation with censored covariates in R
+# EECovCensRd: Consistent parameter estimation with censored covariates in R
 
 Marissa C. Ashner and Tanya P. Garcia
 
 ## Installation
 
-You can install the development version of CensCovMethods from [GitHub](https://github.com/) with:
+You can install the development version of EECovCensRd from [GitHub](https://github.com/) with:
 
 ``` {r}
 # install.packages("devtools")
-devtools::install_github("marissaashner/CensCovMethods")
+devtools::install_github("marissaashner/EECovCensRd")
 ```
 
 ## Data Generation 
 
-To illustrate the functions in CensCovMethods, let's simulate a dataset for a sample of $n = 500$ observations under $(\sim 40\%)$ random right censoring. Specifically, 
+To illustrate the functions in EECovCensRd, let's simulate a dataset for a sample of $n = 500$ observations under $(\sim 40\%)$ random right censoring. Specifically, 
 
 - $X \sim $
 - $C \sim $

@@ -1,4 +1,4 @@
-Package: CensCovMethods
+Package: EECovCensRd
 Type: Package
 Title: What the Package Does (Title Case)
 Version: 0.1.0
@@ -9,8 +9,8 @@ Description: More about what it does (maybe more than one line)
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-URL: https://github.com/marissaashner/CensCovMethods
-BugReports: https://github.com/marissaashner/CensCovMethods/issues
+URL: https://github.com/marissaashner/EECovCensRd
+BugReports: https://github.com/marissaashner/EECovCensRd/issues
 RoxygenNote: 7.1.2
 Imports: 
     magrittr

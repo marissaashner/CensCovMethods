@@ -52,7 +52,7 @@ aipw_censored <- function(formula,
 
   # Need to add error checks
 
-
+# testing
 
   # weights
   if(weight_opt == "user"){
