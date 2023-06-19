@@ -716,7 +716,7 @@ multiroot_func_mle_aft = function(beta_temp, data,
           rep(temp[Y] %>% as.numeric()-m_func(p), length(beta_temp))
       }else{
         piece = psi_hat_i_mle_aft(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                              beta_temp, model_est_x_z_coeff, model_est_x_z_sd, sigma2)
+                              beta_temp, m_func, model_est_x_z_coeff, model_est_x_z_sd, sigma2)
       }
       # print(piece)
       piece
