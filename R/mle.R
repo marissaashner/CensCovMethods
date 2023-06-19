@@ -53,7 +53,7 @@ mle_censored <- function(formula,
     Sigma_joint = cov_sigma_user
     x_cz_dist_params = list(mu_joint = mu_joint,
                            Sigma_joint = Sigma_joint)
-  }else if(cov_dist_opt == "AFT"){
+  }else if(cov_dist_opt == "AFT_lognormal"){
     ## want to estimate the parameters using AFT
     aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
                                     paste(colnames(data %>% select(all_of(cov_vars))),
@@ -104,7 +104,7 @@ mle_censored <- function(formula,
                                              m_func = m_func, mu_joint = mu_joint,
                                              Sigma_joint = Sigma_joint, sigma2 = sigma2,
                                              start = starting_vals, ...)
-  }else if(cov_dist_opt == "AFT"){
+  }else if(cov_dist_opt == "AFT_lognormal"){
     multiroot_results = rootSolve::multiroot(multiroot_func_mle_aft,
                                              data = data,
                                              Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
