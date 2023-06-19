@@ -561,7 +561,8 @@ psi_hat_i_mle_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars
                            cens_name = cens_name, cov_vars = cov_vars,
                            beta_temp = beta_temp, m_func = m_func,
                            C_val = data[cens_name]  %>% as.numeric(),
-                           mu_joint = mu_joint, Sigma_joint = Sigma_joint,
+                           model_est_x_z_coeff = model_est_x_z_coeff,
+                           model_est_x_z_sd =model_est_x_z_sd,
                            sigma2 = sigma2,
                            rel.tol = .Machine$double.eps^0.1,
                            subdivisions = 1000)$value
@@ -575,7 +576,8 @@ psi_hat_i_mle_aft <- function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars
                 cens_name = cens_name, cov_vars = cov_vars,
                 beta_temp = beta_temp, m_func = m_func,
                 C_val = data[cens_name]  %>% as.numeric(),
-                mu_joint = mu_joint, Sigma_joint = Sigma_joint,
+                model_est_x_z_coeff = model_est_x_z_coeff,
+                model_est_x_z_sd =model_est_x_z_sd,
                 sigma2 = sigma2, j = j,
                 rel.tol = .Machine$double.eps^0.1,
                 subdivisions = 1000)$value
