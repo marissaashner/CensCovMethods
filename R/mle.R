@@ -56,7 +56,7 @@ mle_censored <- function(formula,
   }else if(cov_dist_opt == "AFT_lognormal"){
     ## want to estimate the parameters using AFT
     aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
-                                    paste(colnames(data %>% select(all_of(cov_vars))),
+                                    paste(colnames(data %>% dplyr::select(all_of(cov_vars))),
                                           collapse = "+")))
     model_est_x_z = survreg(aft_formula,
                             data = data,
