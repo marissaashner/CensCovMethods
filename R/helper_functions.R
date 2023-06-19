@@ -625,7 +625,7 @@ integral_func_denom_mle_aft <- function(t, data_row, Y, varNamesRHS, par_vec, ce
     m_t = m_func(p)
     f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
     f_x_cz = dnorm(log(data_row[cens_name] %>% as.numeric()),
-                   mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
+                   mean =  c(1, data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
                    sd = model_est_x_z_sd)
     value_ts[i] = f_y*f_x_cz/t[i]
   }
@@ -670,7 +670,7 @@ integral_func_psi_mle_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens
     m_t = m_func(p)
     f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
     f_x_cz = dnorm(log(data_row[cens_name] %>% as.numeric()),
-                   mean = (data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
+                   mean =  c(1, data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff,
                    sd = model_est_x_z_sd)
     value_ts[i] =
       numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y*f_x_cz/t[i]
@@ -708,6 +708,7 @@ multiroot_func_mle_mvn = function(beta_temp, data,
 multiroot_func_mle_aft = function(beta_temp, data,
                               Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
                               m_func, model_est_x_z_coeff, model_est_x_z_sd, sigma2){
+  print(beta_temp)
     pieces = apply(data, 1, function(temp){
       p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
       names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
