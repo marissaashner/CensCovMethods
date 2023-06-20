@@ -964,7 +964,7 @@ multiroot_func_mvn_acc = function(beta_temp, data,
 # }
 
 
-multiroot_func_mvn_linear = function(beta_temp, data,
+multiroot_func_mvn_linear_x_yz = function(beta_temp, data,
                                      Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
                                      m_func, x_yz_dist_params){
   print(beta_temp)

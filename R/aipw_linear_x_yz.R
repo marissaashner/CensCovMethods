@@ -89,7 +89,7 @@ aipw_censored_linear_x_yz <- function(formula,
   # turn formula into function
   cmd <- tail(as.character(formula),1)
   exp <- parse(text=cmd)
-  exp_nobracket <- exp %>% as.character() %>% str_remove_all(., "\\[|\\]") %>%
+  exp_nobracket <- exp %>% as.character() %>% stringr::str_remove_all(., "\\[|\\]") %>%
     parse(text = .)
   m_func = function(p){
     with(as.list(p),
@@ -99,8 +99,8 @@ aipw_censored_linear_x_yz <- function(formula,
   # Find the moments for X | Y, Z
   ## want to estimate the parameters using AFT
   aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
-                                  paste(colnames(data %>% ungroup() %>%
-                                                   select(all_of(Y), all_of(cov_vars))),
+                                  paste(colnames(data %>% dplyr::ungroup() %>%
+                                                   dplyr::select(all_of(Y), all_of(cov_vars))),
                                         collapse = "+")))
   model_est_x_yz = survreg(aft_formula,
                           data = data,
@@ -116,7 +116,7 @@ aipw_censored_linear_x_yz <- function(formula,
   # A = numDeriv::jacobian(m_func, p)[1:length(beta_temp)]
 
   # CC to get estimates for starting values (this can be an option) and sigma2
-  model_est_cc = cc_censored(formula, cens_ind, data, par_vec, starting_vals,
+  model_est_cc = cc_censored(formula, data, cens_ind, par_vec, starting_vals,
                              sandwich_se = FALSE)
   starting_vals = model_est_cc$beta_est %>% as.numeric()
   sigma2 = model_est_cc$sigma_est
