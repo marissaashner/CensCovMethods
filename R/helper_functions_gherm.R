@@ -1,4 +1,5 @@
-hermite_numerator_aipw <- function(x, data_row, cens_name, beta_temp, varNamesRHS, m_func, Y, sigma2, j){
+hermite_numerator_aipw <- function(x, data_row, cens_name, beta_temp, par_vec,
+                                   varNamesRHS, m_func, Y, sigma2, j){
   data_row[cens_name] = exp(x)
   p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
   names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
@@ -8,7 +9,8 @@ hermite_numerator_aipw <- function(x, data_row, cens_name, beta_temp, varNamesRH
 }
 
 
-hermite_denominator_aipw <- function(x, data_row, cens_name, beta_temp, varNamesRHS, m_func, Y, sigma2){
+hermite_denominator_aipw <- function(x, data_row, cens_name, beta_temp, par_vec,
+                                     varNamesRHS, m_func, Y, sigma2){
   data_row[cens_name] = exp(x)
   p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
   names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
@@ -34,13 +36,13 @@ psi_hat_i_hermite_aipw = function(data_row, Y, varNamesRHS, par_vec, cens_name, 
   numerator = lapply(1:length(beta_temp), function(j) {
     sum(gherm$weights * sigma * lapply(gherm$nodes, function(node){
       hermite_numerator_aipw(sqrt(2)*sigma*node + mu, data_row, cens_name, beta_temp,
-                        varNamesRHS, m_func, Y, sigma2, j)
+                        par_vec, varNamesRHS, m_func, Y, sigma2, j)
     }) %>% unlist())
   }) %>% unlist()
 
   denominator = sum(gherm$weights * sigma * lapply(gherm$nodes, function(node){
     hermite_denominator_aipw(sqrt(2)*sigma*node + mu, data_row, cens_name, beta_temp,
-                        varNamesRHS, m_func, Y, sigma2)
+                        par_vec, varNamesRHS, m_func, Y, sigma2)
   }) %>% unlist())
 
   numerator/denominator
