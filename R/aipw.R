@@ -147,7 +147,7 @@ aipw_censored <- function(formula,
   # A = numDeriv::jacobian(m_func, p)[1:length(beta_temp)]
 
   # CC to get estimates for starting values (this can be an option) and sigma2
-  model_est_cc = cc_censored(formula, cens_ind, data, par_vec, starting_vals,
+  model_est_cc = cc_censored(formula, data, cens_ind, par_vec, starting_vals,
                              sandwich_se = FALSE)
   starting_vals = model_est_cc$beta_est %>% as.numeric()
   sigma2 = model_est_cc$sigma_est
