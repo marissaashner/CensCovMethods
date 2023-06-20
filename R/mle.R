@@ -48,7 +48,7 @@ mle_censored <- function(formula,
     Sigma_joint = mvn_results$Sigma_joint
     x_cz_dist_params = list(mu_joint = mu_joint,
                             Sigma_joint = Sigma_joint)
-  }else if(cov_dist_opt == "user MVN"){
+  }else if(cov_dist_opt == "user_MVN"){
     mu_joint = cov_mean_user
     Sigma_joint = cov_sigma_user
     x_cz_dist_params = list(mu_joint = mu_joint,

@@ -3,8 +3,8 @@
 #' Performs a complete case analysis using least squares for a regression model with censored covariates.
 #'
 #' @param formula a linear or nonlinear model formula including variables and parameters.
-#' @param cens_ind name of censoring indicator, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored.
 #' @param data a data frame containing columns for the censoring indicator and the variables in the formula
+#' @param cens_ind name of censoring indicator, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored.
 #' @param par_vec name of parameter vector in the formula
 #' @param starting_vals the starting values for the least squares algorithm. Must be a vector equal in length of the parameter vector
 #' @param sandwich_se if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated.
@@ -22,8 +22,8 @@
 #'
 #' @export
 cc_censored <- function(formula,
-                        cens_ind,
                         data,
+                        cens_ind,
                         par_vec,
                         starting_vals,
                         sandwich_se = TRUE){

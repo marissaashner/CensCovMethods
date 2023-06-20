@@ -47,7 +47,6 @@ acc_censored <- function(formula,
                           cov_vars,
                           cov_mean_user = NULL,
                           cov_sigma_user = NULL,
-                          stabilize_weights,
                           ...){
 
   # Need to add error checks
