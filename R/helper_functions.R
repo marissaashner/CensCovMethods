@@ -963,3 +963,26 @@ multiroot_func_mvn_acc = function(beta_temp, data,
 #   rowSums(pieces)
 # }
 
+
+multiroot_func_mvn_linear = function(beta_temp, data,
+                                     Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
+                                     m_func, x_yz_dist_params){
+  print(beta_temp)
+  pieces = apply(data, 1, function(temp){
+    p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    ipw_piece = rep(temp[cens_ind]*temp["weights"], length(beta_temp))*
+      numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
+      rep(temp[Y]-m_func(p), length(beta_temp))
+    aipw_piece = rep(1 - temp[cens_ind]*temp["weights"], length(beta_temp))*
+      psi_hat_i_mvn_linear(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                           beta_temp, m_func, x_yz_dist_params)
+    ipw_piece + aipw_piece
+  }) %>% unname()
+  rowSums(pieces)
+}
+
+
+
+
+

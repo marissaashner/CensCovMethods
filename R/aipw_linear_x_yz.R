@@ -99,7 +99,8 @@ aipw_censored_linear_x_yz <- function(formula,
   # Find the moments for X | Y, Z
   ## want to estimate the parameters using AFT
   aft_formula <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
-                                  paste(colnames(data %>% select(all_of(Y), all_of(cov_vars))),
+                                  paste(colnames(data %>% ungroup() %>%
+                                                   select(all_of(Y), all_of(cov_vars))),
                                         collapse = "+")))
   model_est_x_yz = survreg(aft_formula,
                           data = data,
