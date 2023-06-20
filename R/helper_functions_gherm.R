@@ -31,15 +31,15 @@ psi_hat_i_hermite_aipw = function(data_row, Y, varNamesRHS, par_vec, cens_name, 
   }
 
 
-  numerator_aipw = lapply(1:length(beta_temp), function(j) {
+  numerator = lapply(1:length(beta_temp), function(j) {
     sum(gherm$weights * sigma * lapply(gherm$nodes, function(node){
-      hermite_numerator(sqrt(2)*sigma*node + mu, data_row, cens_name, beta_temp,
+      hermite_numerator_aipw(sqrt(2)*sigma*node + mu, data_row, cens_name, beta_temp,
                         varNamesRHS, m_func, Y, sigma2, j)
     }) %>% unlist())
   }) %>% unlist()
 
-  denominator_aipw = sum(gherm$weights * sigma * lapply(gherm$nodes, function(node){
-    hermite_denominator(sqrt(2)*sigma*node + mu, data_row, cens_name, beta_temp,
+  denominator = sum(gherm$weights * sigma * lapply(gherm$nodes, function(node){
+    hermite_denominator_aipw(sqrt(2)*sigma*node + mu, data_row, cens_name, beta_temp,
                         varNamesRHS, m_func, Y, sigma2)
   }) %>% unlist())
 
