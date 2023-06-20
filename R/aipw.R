@@ -18,6 +18,8 @@
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
 #' @param cov_mean_user if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
 #' @param cov_sigma_user if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
+#' @param gh if \code{TRUE} (default), gauss-hermite quadrature will be run to estimate the integrals. Otherwise, the \code{integrate} function will be used.
+#' @param gh_nodes
 #' @param ... additional arguments passed to function \code{multiroot}.
 #'
 #' @return A list with the following elements:
@@ -29,6 +31,7 @@
 #' @import rootSolve
 #' @import survival
 #' @import numDeriv
+#' @import statmod
 #'
 #' @export
 aipw_censored <- function(formula,
@@ -47,6 +50,8 @@ aipw_censored <- function(formula,
                          cov_vars,
                          cov_mean_user = NULL,
                          cov_sigma_user = NULL,
+                         gh = TRUE,
+                         gh_nodes = 10,
                          ...){
 
   # Need to add error checks
@@ -152,7 +157,10 @@ aipw_censored <- function(formula,
   starting_vals = model_est_cc$beta_est %>% as.numeric()
   sigma2 = model_est_cc$sigma_est
 
-  if(endsWith(cov_dist_opt, "MVN")){
+  n <- gh_nodes
+  gherm <- statmod::gauss.quad(n, kind="hermite")
+
+  if(endsWith(cov_dist_opt, "MVN") & !gh){
     multiroot_results = rootSolve::multiroot(multiroot_func_mvn,
                                              data = data,
                                              Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
@@ -160,13 +168,21 @@ aipw_censored <- function(formula,
                                              m_func = m_func, mu_joint = mu_joint,
                                              Sigma_joint = Sigma_joint, sigma2 = sigma2,
                                              start = starting_vals, ...)
-  }else if(cov_dist_opt == "AFT_lognormal"){
+  }else if(cov_dist_opt == "AFT_lognormal" & !gh){
     multiroot_results = rootSolve::multiroot(multiroot_func_aft,
                                              data = data,
                                              Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
                                              cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
                                              m_func = m_func, model_est_x_z_coeff = model_est_x_z_coeff,
                                              model_est_x_z_sd = model_est_x_z_sd, sigma2 = sigma2,
+                                             start = starting_vals, ...)
+  }else if(gh){
+    multiroot_results = rootSolve::multiroot(multiroot_func_hermite_aipw,
+                                             data = data,
+                                             Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
+                                             cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
+                                             m_func = m_func, cov_dist_params = cov_dist_params,
+                                             sigma2 = sigma2, gherm = gherm,
                                              start = starting_vals, ...)
   }
 
@@ -179,9 +195,16 @@ aipw_censored <- function(formula,
 
   # run sandwich estimator
   if(sandwich_se){
-    se_est = aipw_sandwich(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                           beta_est, m_func, cens_ind, cov_dist_params, sigma2,
-                           cov_dist_opt)
+    if(!gh){
+      se_est = aipw_sandwich(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                             beta_est, m_func, cens_ind, cov_dist_params, sigma2,
+                             cov_dist_opt)
+    }else{
+      se_est = aipw_sandwich_hermite(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                             beta_est, m_func, cens_ind, cov_dist_params, sigma2,
+                             cov_dist_opt, gherm)
+    }
+
     print("Standard Errors estimated!")
   }else{
     se_est = NULL
@@ -321,5 +344,111 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
 
 }
 
+aipw_sandwich_hermite <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                          beta_est, m_func, cens_ind, cov_dist_params, sigma2,
+                          cov_dist_opt, gherm){
 
+  #convert beta_est to numeric
+  beta_est = beta_est %>% as.numeric()
+
+  # extract variable names from formula
+  varNames = all.vars(formula)
+  form2 = formula
+  form2[[2]] <- NULL
+  varNamesRHS = all.vars(form2)
+  Y = varNames[is.na(match(varNames, varNamesRHS))]
+
+  do.call("<-", list(par_vec, beta_est))
+
+  varNamesRHS = varNamesRHS[is.na(match(varNamesRHS, par_vec))]
+
+  # turn formula into function
+
+  cmd <- tail(as.character(formula),1)
+  exp <- parse(text=cmd)
+  exp_nobracket <- exp %>% as.character() %>% stringr::str_remove_all(., "\\[|\\]") %>%
+    parse(text = .)
+  m_func = function(p){
+    with(as.list(p),
+         eval(exp_nobracket))
+  }
+
+  # create "g" function for the sandwich estimator
+    g = function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                 beta_est, m_func, cens_ind, cov_dist_params, sigma2,
+                 gherm){
+      p = c(beta_est, data[varNamesRHS]) %>% as.numeric()
+      names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
+
+      ipw_piece = rep(as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]), length(beta_est)) %>% as.numeric()*
+        numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
+        rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
+      aipw_piece = rep(1 - as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]), length(beta_est)) %>% as.numeric()*
+        psi_hat_i_hermite_aipw(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                      beta_est, m_func, cov_dist_params, sigma2, gherm)
+
+      ipw_piece + aipw_piece
+  }
+
+  # first derivative function
+  # calculates first derivative for subject i (data x)
+  # f(x;beta) where beta is of length lb, x is a scalar
+  # first derivative = ( f(beta+ delta) - f(beta-delta) )/ (2 * delta)
+  firstderivative <- function(beta, g, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                              m_func, cens_ind, cov_dist_params, sigma2, gherm){
+    lb <- length(beta)
+    derivs <- matrix(data = 0, nrow = lb, ncol = lb)
+    delta <- beta * (10 ^ (- 4))
+    betal <- betar <- beta
+    for (i in 1:lb) {
+      # Perturb the ith element of beta
+      betal[i] <- beta[i] - delta[i]
+      betar[i] <- beta[i] + delta[i]
+
+      # Calculate function values
+      yout1 <- g(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                 betal, m_func, cens_ind, cov_dist_params, sigma2, gherm)
+      yout2 <- g(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                 betar, m_func, cens_ind, cov_dist_params, sigma2, gherm)
+
+      # Calculate derivative and save in vector A
+      derivs[i,] <- (yout2 - yout1) / (2 * delta[i])
+
+      # Reset parameter vectors
+      betal <- betar <- beta
+    }
+    #print("hi")
+    return(derivs)
+  }
+
+  # take the inverse first derivative of g
+  first_der <- apply(data, 1, function(temp){
+    firstderivative(beta_est, g, temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                    m_func, cens_ind, cov_dist_params, sigma2, gherm)
+  })
+  if(length(beta_est) > 1){
+    first_der = first_der %>% rowMeans() %>% matrix(nrow = length(beta_est))
+  }else{
+    first_der = first_der %>% mean()
+  }
+  inv_first_der <- solve(first_der)
+
+  # need to get the outer product of g at each observation and take the mean
+  gs = apply(data, 1, function(temp)
+    g(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+      beta_est, m_func, cens_ind, cov_dist_params, sigma2, gherm))
+  if(length(beta_est) > 1){
+    outer_prod = apply(gs, 2, function(g) g%*%t(g))
+    outer_prod = outer_prod %>% rowMeans() %>% matrix(nrow = length(beta_est))
+  }else{
+    outer_prod = gs^2
+    outer_prod = outer_prod %>% mean()
+  }
+
+
+  ## then need to put it all together
+  se = sqrt((inv_first_der %*% outer_prod %*% t(inv_first_der) / nrow(data)) %>% diag())
+  return(se)
+
+}
 
