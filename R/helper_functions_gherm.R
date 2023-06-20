@@ -22,8 +22,8 @@ hermite_denominator_aipw <- function(x, data_row, cens_name, beta_temp, par_vec,
 psi_hat_i_hermite_aipw = function(data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                              beta_temp, m_func, cov_dist_params, sigma2, gherm){
   if(!is.null(cov_dist_params$model_est_x_z_coeff)){
-    mu <- c(1, data_row[cov_vars] %>% as.numeric()) %*% model_est_x_z_coeff
-    sigma <- model_est_x_z_sd
+    mu <- c(1, data_row[cov_vars] %>% as.numeric()) %*% cov_dist_params$model_est_x_z_coeff
+    sigma <- cov_dist_params$model_est_x_z_sd
   }else if(!is.null(cov_dist_params$mu_joint)){
     mu <- cov_dist_params$mu_joint[1] +
       cov_dist_params$Sigma_joint[1,3]*cov_dist_params$Sigma_joint[3,3]^(-1)*
