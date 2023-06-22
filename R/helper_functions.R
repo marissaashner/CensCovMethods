@@ -104,7 +104,7 @@ weights_aft_acc <- function(data, cens_ind, weights_cov, Y, cens_name){
                      lower.tail = TRUE)
 
 
-  return(data$D*weights_d1 + (1-data$D)*weights_d0)
+  return(data[cens_ind]*weights_d1 + (1-data[cens_ind])*weights_d0)
 }
 
 # want to make warnings go away on the MVN part
