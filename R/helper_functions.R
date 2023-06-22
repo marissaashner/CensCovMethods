@@ -91,7 +91,8 @@ weights_aft_acc <- function(data, cens_ind, weights_cov, Y, cens_name){
 
   ### For DELTA = 0
   aft_formula_x <- as.formula(paste("survival::Surv(", cens_name, ", ", cens_ind, ") ~",
-                                    paste(colnames(data %>% dplyr::select(all_of(Y), all_of(weights_cov))),
+                                    paste(colnames(data %>% dplyr::ungroup() %>%
+                                                     dplyr::select(all_of(Y), all_of(weights_cov))),
                                           collapse = "+")))
   model_est_x_yz = survival::survreg(aft_formula_x,
                                      data = data,
