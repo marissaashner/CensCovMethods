@@ -157,9 +157,6 @@ aipw_censored <- function(formula,
   starting_vals = model_est_cc$beta_est %>% as.numeric()
   sigma2 = model_est_cc$sigma_est
 
-  n <- gh_nodes
-  gherm <- statmod::gauss.quad(n, kind="hermite")
-
   if(endsWith(cov_dist_opt, "MVN") & !gh){
     multiroot_results = rootSolve::multiroot(multiroot_func_mvn,
                                              data = data,
@@ -182,7 +179,7 @@ aipw_censored <- function(formula,
                                              Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
                                              cens_name = cens_name, cov_vars = cov_vars, cens_ind = cens_ind,
                                              m_func = m_func, cov_dist_params = cov_dist_params,
-                                             sigma2 = sigma2, gherm = gherm,
+                                             sigma2 = sigma2, gh_nodes = gh_nodes,
                                              start = starting_vals, ...)
   }
 
@@ -202,7 +199,7 @@ aipw_censored <- function(formula,
     }else{
       se_est = aipw_sandwich_hermite(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                              beta_est, m_func, cens_ind, cov_dist_params, sigma2,
-                             cov_dist_opt, gherm)
+                             cov_dist_opt, gh_nodes)
     }
 
     print("Standard Errors estimated!")
@@ -346,7 +343,7 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
 
 aipw_sandwich_hermite <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                           beta_est, m_func, cens_ind, cov_dist_params, sigma2,
-                          cov_dist_opt, gherm){
+                          cov_dist_opt, gh_nodes){
 
   #convert beta_est to numeric
   beta_est = beta_est %>% as.numeric()
@@ -376,7 +373,7 @@ aipw_sandwich_hermite <- function(formula, data, Y, varNamesRHS, par_vec, cens_n
   # create "g" function for the sandwich estimator
     g = function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                  beta_est, m_func, cens_ind, cov_dist_params, sigma2,
-                 gherm){
+                 gh_nodes){
       p = c(beta_est, data[varNamesRHS]) %>% as.numeric()
       names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
@@ -385,7 +382,7 @@ aipw_sandwich_hermite <- function(formula, data, Y, varNamesRHS, par_vec, cens_n
         rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
       aipw_piece = rep(1 - as.numeric(data[[cens_ind]])*as.numeric(data[["weights"]]), length(beta_est)) %>% as.numeric()*
         psi_hat_i_hermite_aipw(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                      beta_est, m_func, cov_dist_params, sigma2, gherm)
+                      beta_est, m_func, cov_dist_params, sigma2, gh_nodes)
 
       ipw_piece + aipw_piece
   }
@@ -395,7 +392,7 @@ aipw_sandwich_hermite <- function(formula, data, Y, varNamesRHS, par_vec, cens_n
   # f(x;beta) where beta is of length lb, x is a scalar
   # first derivative = ( f(beta+ delta) - f(beta-delta) )/ (2 * delta)
   firstderivative <- function(beta, g, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                              m_func, cens_ind, cov_dist_params, sigma2, gherm){
+                              m_func, cens_ind, cov_dist_params, sigma2, gh_nodes){
     lb <- length(beta)
     derivs <- matrix(data = 0, nrow = lb, ncol = lb)
     delta <- beta * (10 ^ (- 4))
@@ -407,9 +404,9 @@ aipw_sandwich_hermite <- function(formula, data, Y, varNamesRHS, par_vec, cens_n
 
       # Calculate function values
       yout1 <- g(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                 betal, m_func, cens_ind, cov_dist_params, sigma2, gherm)
+                 betal, m_func, cens_ind, cov_dist_params, sigma2, gh_nodes)
       yout2 <- g(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                 betar, m_func, cens_ind, cov_dist_params, sigma2, gherm)
+                 betar, m_func, cens_ind, cov_dist_params, sigma2, gh_nodes)
 
       # Calculate derivative and save in vector A
       derivs[i,] <- (yout2 - yout1) / (2 * delta[i])
@@ -424,7 +421,7 @@ aipw_sandwich_hermite <- function(formula, data, Y, varNamesRHS, par_vec, cens_n
   # take the inverse first derivative of g
   first_der <- apply(data, 1, function(temp){
     firstderivative(beta_est, g, temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                    m_func, cens_ind, cov_dist_params, sigma2, gherm)
+                    m_func, cens_ind, cov_dist_params, sigma2, gh_nodes)
   })
   if(length(beta_est) > 1){
     first_der = first_der %>% rowMeans() %>% matrix(nrow = length(beta_est))
@@ -436,7 +433,7 @@ aipw_sandwich_hermite <- function(formula, data, Y, varNamesRHS, par_vec, cens_n
   # need to get the outer product of g at each observation and take the mean
   gs = apply(data, 1, function(temp)
     g(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-      beta_est, m_func, cens_ind, cov_dist_params, sigma2, gherm))
+      beta_est, m_func, cens_ind, cov_dist_params, sigma2, gh_nodes))
   if(length(beta_est) > 1){
     outer_prod = apply(gs, 2, function(g) g%*%t(g))
     outer_prod = outer_prod %>% rowMeans() %>% matrix(nrow = length(beta_est))
