@@ -6,8 +6,8 @@
 \usage{
 cc_censored(
   formula,
-  cens_ind,
   data,
+  cens_ind,
   par_vec,
   starting_vals,
   sandwich_se = TRUE
@@ -16,9 +16,9 @@ cc_censored(
 \arguments{
 \item{formula}{a linear or nonlinear model formula including variables and parameters.}
 
-\item{cens_ind}{name of censoring indicator, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored.}
-
 \item{data}{a data frame containing columns for the censoring indicator and the variables in the formula}
+
+\item{cens_ind}{name of censoring indicator, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored.}
 
 \item{par_vec}{name of parameter vector in the formula}
 

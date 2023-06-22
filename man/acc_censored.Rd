@@ -19,7 +19,8 @@ acc_censored(
   cov_vars,
   cov_mean_user = NULL,
   cov_sigma_user = NULL,
-  stabilize_weights,
+  gh = TRUE,
+  gh_nodes = 10,
   ...
 )
 }
@@ -52,7 +53,9 @@ acc_censored(
 
 \item{cov_sigma_user}{if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.}
 
-\item{...}{additional arguments passed to function \code{multiroot}.}
+\item{gh}{if \code{TRUE} (default), gauss-hermite quadrature will be run to estimate the integrals. Otherwise, the \code{integrate} function will be used.}
+
+\item{gh_nodes}{@param ... additional arguments passed to function \code{multiroot}.}
 
 \item{weights_threshold}{the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.}
 

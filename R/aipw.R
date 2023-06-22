@@ -19,7 +19,7 @@
 #' @param cov_mean_user if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
 #' @param cov_sigma_user if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
 #' @param gh if \code{TRUE} (default), gauss-hermite quadrature will be run to estimate the integrals. Otherwise, the \code{integrate} function will be used.
-#' @param gh_nodes
+#' @param gh_nodes number of nodes to use in gauss-hermite quadrature.
 #' @param ... additional arguments passed to function \code{multiroot}.
 #'
 #' @return A list with the following elements:
