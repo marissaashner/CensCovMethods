@@ -37,7 +37,8 @@ psi_hat_i_hermite_aipw = function(data_row, Y, varNamesRHS, par_vec, cens_name, 
       cov_dist_params$Sigma_joint[1,3]^2*cov_dist_params$Sigma_joint[3,3]^(-1))
   }
 
-  gherm <- statmod::gauss.quad.prob(gh_nodes, dist="normal", mu = mu, sigma = sigma)
+  gherm <- statmod::gauss.quad.prob(gh_nodes, dist="normal", mu = mu %>% as.numeric(),
+                                    sigma = sigma)
 
   numerator = lapply(1:length(beta_temp), function(j) {
     sum(gherm$weights * lapply(gherm$nodes, function(node){
@@ -129,7 +130,8 @@ psi_hat_i_hermite_acc = function(data_row, Y, varNamesRHS, par_vec, cens_name, c
       cov_dist_params$Sigma_joint[c(1,3), 2])
   }
 
-  gherm <- statmod::gauss.quad.prob(gh_nodes, dist="normal", mu = mu, sigma = sigma)
+  gherm <- statmod::gauss.quad.prob(gh_nodes, dist="normal", mu = mu %>% as.numeric(),
+                                    sigma = sigma)
 
   numerator = lapply(1:length(beta_temp), function(j) {
     sum(gherm$weights * lapply(gherm$nodes, function(node){
