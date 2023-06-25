@@ -187,7 +187,7 @@ acc_censored <- function(formula,
     }else{
       se_est = acc_sandwich_hermite(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                                      beta_est, m_func, cens_ind, cov_dist_params, sigma2,
-                                     cov_dist_opt, gherm)
+                                     cov_dist_opt, gh_nodes)
     }
 
     print("Standard Errors estimated!")
