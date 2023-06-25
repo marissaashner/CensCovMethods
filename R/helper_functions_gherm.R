@@ -154,7 +154,7 @@ multiroot_func_hermite_acc = function(beta_temp, data,
                                        Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
                                        m_func, cov_dist_params, sigma2, gh_nodes){
   print(beta_temp)
-  pieces = apply(data[1,], 1, function(temp){
+  pieces = apply(data, 1, function(temp){
     p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
     cc_piece = rep(as.numeric(temp[[cens_ind]]), length(beta_temp))*
