@@ -163,7 +163,7 @@ multiroot_func_hermite_acc = function(beta_temp, data,
     acc_piece = rep(as.numeric(temp[[cens_ind]]) - as.numeric(temp[["weights"]]), length(beta_temp))*
       psi_hat_i_hermite_acc(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                              beta_temp, m_func, cov_dist_params, sigma2, gh_nodes)
-    cc_piece + acc_piece
+    cc_piece - acc_piece
   }) %>% unname()
   rowSums(pieces)
 }

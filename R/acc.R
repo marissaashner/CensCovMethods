@@ -372,11 +372,11 @@ acc_sandwich_hermite <- function(formula, data, Y, varNamesRHS, par_vec, cens_na
     cc_piece = rep(as.numeric(data[[cens_ind]]), length(beta_est)) %>% as.numeric()*
       numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
       rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
-    acc_piece = rep(1 - as.numeric(data[[cens_ind]]) - as.numeric(data[["weights"]]), length(beta_est)) %>% as.numeric()*
+    acc_piece = rep(as.numeric(data[[cens_ind]]) - as.numeric(data[["weights"]]), length(beta_est)) %>% as.numeric()*
       psi_hat_i_hermite_acc(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                              beta_est, m_func, cov_dist_params, sigma2, gh_nodes)
 
-    cc_piece + acc_piece
+    cc_piece - acc_piece
   }
 
   # first derivative function
