@@ -158,7 +158,7 @@ ipw_sandwich <- function(formula,
   }
 
   # create "g" function for the sandwich estimator
-  g = function(data, beta_est, m_func, par_vec, var_namesRHS, cens_ind){
+  g = function(data, beta_est, m_func, par_vec, varNamesRHS, cens_ind){
     p = c(beta_est, data[varNamesRHS])%>% as.numeric()
     names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
@@ -200,7 +200,7 @@ ipw_sandwich <- function(formula,
 
   # take the inverse first derivative of g
   first_der <- apply(data, 1, function(temp){
-    firstderivative(beta_est, g, temp, var_namesRHS, par_vec, m_func, cens_ind)
+    firstderivative(beta_est, g, temp, varNamesRHS, par_vec, m_func, cens_ind)
   })
   if(length(beta_est) > 1){
     first_der = first_der %>% rowMeans() %>% matrix(nrow = length(beta_est))
@@ -211,7 +211,7 @@ ipw_sandwich <- function(formula,
 
   # need to get the outer product of g at each observation and take the mean
   gs = apply(data, 1, function(temp)
-    g(temp, beta_est, m_func, par_vec, var_namesRHS, cens_ind))
+    g(temp, beta_est, m_func, par_vec, varNamesRHS, cens_ind))
   if(length(beta_est) > 1){
     outer_prod = apply(gs, 2, function(g) g%*%t(g))
     outer_prod = outer_prod %>% rowMeans() %>% matrix(nrow = length(beta_est))
