@@ -61,6 +61,8 @@ aipw_censored(
 
 \item{gh}{if \code{TRUE} (default), gauss-hermite quadrature will be run to estimate the integrals. Otherwise, the \code{integrate} function will be used.}
 
+\item{gh_nodes}{number of nodes to use in gauss-hermite quadrature.}
+
 \item{...}{additional arguments passed to function \code{multiroot}.}
 }
 \value{

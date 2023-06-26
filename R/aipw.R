@@ -215,6 +215,33 @@ aipw_censored <- function(formula,
               iteration_count = iteration_count))
 }
 
+
+#' Sandwich Estimator for Augmented Inverse Probability Weighting for Censored Covariates
+#'
+#' Calculates the standard error sandwich estimate for an AIPW estimator for a regression model with censored covariates.
+#'
+#' @param formula a linear or nonlinear model formula including variables and parameters
+#' @param data a data frame containing columns for the censoring indicator and the variables in \code{formula}
+#' @param Y a character string indicating the name of the outcome from \code{data}
+#' @param varNamesRHS a vector of character strings indicating the names of the variables on the right side of \code{formula}
+#' @param par_vec a character string indicating the parameter vector in the formula
+#' @param cens_name a character string indicating the name of censored covariate from \code{data}
+#' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
+#' @param beta_est the estimate from the augmented complete case estimator
+#' @param m_func the mean function of the regression model
+#' @param cens_ind a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored
+#' @param cov_dist_params a list of parameters for the conditional distribution of the censored covariate given the fully observed covariates
+#' @param sigma2 the estimate of the error variance
+#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"
+#'
+#' @return A vector of the sandwich standard error estimates.
+#'
+#' @import tidyverse
+#' @import rootSolve
+#' @import survival
+#' @import numDeriv
+#'
+#' @export
 aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                           beta_est, m_func, cens_ind, cov_dist_params, sigma2,
                           cov_dist_opt){
@@ -341,6 +368,34 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
 
 }
 
+#' Sandwich Estimator for Augmented Inverse Probability Weighting for Censored Covariates with Gauss Hermite Quadrature
+#'
+#' Calculates the standard error sandwich estimate for an AIPW estimator for a regression model with censored covariates.
+#'
+#' @param formula a linear or nonlinear model formula including variables and parameters
+#' @param data a data frame containing columns for the censoring indicator and the variables in \code{formula}
+#' @param Y a character string indicating the name of the outcome from \code{data}
+#' @param varNamesRHS a vector of character strings indicating the names of the variables on the right side of \code{formula}
+#' @param par_vec a character string indicating the parameter vector in the formula
+#' @param cens_name a character string indicating the name of censored covariate from \code{data}
+#' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
+#' @param beta_est the estimate from the augmented complete case estimator
+#' @param m_func the mean function of the regression model
+#' @param cens_ind a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored
+#' @param cov_dist_params a list of parameters for the conditional distribution of the censored covariate given the fully observed covariates
+#' @param sigma2 the estimate of the error variance
+#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"
+#' @param gh_nodes number of nodes to use in gauss-hermite quadrature.
+#'
+#' @return A vector of the sandwich standard error estimates.
+#'
+#' @import tidyverse
+#' @import rootSolve
+#' @import survival
+#' @import numDeriv
+#' @import statmod
+#'
+#' @export
 aipw_sandwich_hermite <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
                           beta_est, m_func, cens_ind, cov_dist_params, sigma2,
                           cov_dist_opt, gh_nodes){

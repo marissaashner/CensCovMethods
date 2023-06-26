@@ -102,6 +102,27 @@ ipw_censored <- function(formula,
               iteration_count = iteration_count))
 }
 
+
+
+#' Sandwich Estimator for Inverse Probability Weighting for Censored Covariates
+#'
+#' Calculates the standard error sandwich estimate for an IPW estimator for a regression model with censored covariates.
+#'
+#' @param formula a linear or nonlinear model formula including variables and parameters
+#' @param data a data frame containing columns for the censoring indicator and the variables in the formula
+#' @param cens_ind a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored
+#' @param par_vec a character string indicating the parameter vector in the formula
+#' @param beta_est the estimate from the complete case estimator
+#' @param weights a vector of weights for the IPW estimating function
+#'
+#' @return A vector of the sandwich standard error estimates.
+#'
+#' @import tidyverse
+#' @import rootSolve
+#' @import survival
+#' @import numDeriv
+#'
+#' @export
 ipw_sandwich <- function(formula,
                         data,
                         cens_ind,

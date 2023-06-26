@@ -55,11 +55,9 @@ acc_censored(
 
 \item{gh}{if \code{TRUE} (default), gauss-hermite quadrature will be run to estimate the integrals. Otherwise, the \code{integrate} function will be used.}
 
-\item{gh_nodes}{@param ... additional arguments passed to function \code{multiroot}.}
+\item{gh_nodes}{number of nodes to use in gauss-hermite quadrature.}
 
-\item{weights_threshold}{the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.}
-
-\item{weight_stabilize}{a character string indicating which method of weight stabilization is to be done (if any). One of \code{c("Mean", "KM", "None")}.}
+\item{...}{additional arguments passed to function \code{multiroot}.}
 }
 \value{
 A list with the following elements:
