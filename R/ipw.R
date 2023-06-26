@@ -21,7 +21,6 @@
 #'
 #'
 #' @import tidyverse
-#' @import rootSolve
 #' @import survival
 #' @import numDeriv
 #'

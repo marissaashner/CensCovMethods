@@ -72,7 +72,6 @@ cc_censored <- function(formula,
 #' @return A vector of the sandwich standard error estimates.
 #'
 #' @import tidyverse
-#' @import rootSolve
 #' @import survival
 #' @import numDeriv
 #'

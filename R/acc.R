@@ -355,7 +355,7 @@ acc_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_
 #' @return A vector of the sandwich standard error estimates.
 #'
 #' @import tidyverse
-#' @import rootSolve
+#' @importFrom rootSolve multiroot
 #' @import survival
 #' @import numDeriv
 #' @import statmod

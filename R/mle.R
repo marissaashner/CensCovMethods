@@ -161,7 +161,7 @@ mle_censored <- function(formula,
 #' @return A vector of the sandwich standard error estimates.
 #'
 #' @import tidyverse
-#' @import rootSolve
+#' @importFrom rootSolve multiroot
 #' @import survival
 #' @import numDeriv
 #'

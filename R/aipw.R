@@ -28,7 +28,7 @@
 #' \item{iteration_count}{the number of iterations used in \code{multiroot}.}
 #'
 #' @import tidyverse
-#' @import rootSolve
+#' @importFrom rootSolve multiroot
 #' @import survival
 #' @import numDeriv
 #' @import statmod
