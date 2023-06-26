@@ -125,7 +125,7 @@ psi_hat_i_hermite_acc = function(data_row, Y, varNamesRHS, par_vec, cens_name, c
     mu_c <- function(x, cov_dist_params) {cov_dist_params$mu_joint[2] +
       cov_dist_params$Sigma_joint[2, c(1,3)]%*%cov_dist_params$Sigma_joint[c(1, 3), c(1, 3)]^(-1)%*%
       (c(x, data_row[cov_vars] %>% as.numeric())  - cov_dist_params$mu_joint[c(1,3)])}
-    sigma_c <- sqrt(cov_dist_params$mu_joint[2] -
+    sigma_c <- sqrt(cov_dist_params$Sigma_joint[2,2] -
       cov_dist_params$Sigma_joint[2, c(1,3)]%*%cov_dist_params$Sigma_joint[c(1, 3), c(1, 3)]^(-1)%*%
       cov_dist_params$Sigma_joint[c(1,3), 2])
   }
