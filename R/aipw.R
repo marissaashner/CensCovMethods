@@ -14,10 +14,10 @@
 #' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.
 #' @param weights_threshold the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.
 #' @param weight_stabilize a character string indicating which method of weight stabilization is to be done (if any). One of \code{c("Mean", "KM", "None")}.
-#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"
+#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user_MVN", "AFT"
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
-#' @param cov_mean_user if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
-#' @param cov_sigma_user if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
+#' @param cov_mean_user if \code{cov_dis_opt = "user_MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
+#' @param cov_sigma_user if \code{cov_dis_opt = "user_MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
 #' @param gh if \code{TRUE} (default), gauss-hermite quadrature will be run to estimate the integrals. Otherwise, the \code{integrate} function will be used.
 #' @param gh_nodes number of nodes to use in gauss-hermite quadrature.
 #' @param ... additional arguments passed to function \code{multiroot}.
@@ -155,7 +155,7 @@ aipw_censored <- function(formula,
   model_est_cc = cc_censored(formula, data, cens_ind, par_vec, starting_vals,
                              sandwich_se = FALSE)
   starting_vals = model_est_cc$beta_est %>% as.numeric()
-  sigma2 = model_est_cc$sigma_est
+  sigma2 = model_est_cc$sigma_est^2
 
   if(endsWith(cov_dist_opt, "MVN") & !gh){
     multiroot_results = rootSolve::multiroot(multiroot_func_mvn,
@@ -193,12 +193,12 @@ aipw_censored <- function(formula,
   # run sandwich estimator
   if(sandwich_se){
     if(!gh){
-      se_est = aipw_sandwich(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                             beta_est, m_func, cens_ind, cov_dist_params, sigma2,
+      se_est = aipw_sandwich(formula, data, par_vec, cens_name, cov_vars,
+                             beta_est, cens_ind, cov_dist_params, sigma2,
                              cov_dist_opt)
     }else{
-      se_est = aipw_sandwich_hermite(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                             beta_est, m_func, cens_ind, cov_dist_params, sigma2,
+      se_est = aipw_sandwich_hermite(formula, data, par_vec, cens_name, cov_vars,
+                             beta_est, cens_ind, cov_dist_params, sigma2,
                              cov_dist_opt, gh_nodes)
     }
 
@@ -222,17 +222,14 @@ aipw_censored <- function(formula,
 #'
 #' @param formula a linear or nonlinear model formula including variables and parameters
 #' @param data a data frame containing columns for the censoring indicator and the variables in \code{formula}
-#' @param Y a character string indicating the name of the outcome from \code{data}
-#' @param varNamesRHS a vector of character strings indicating the names of the variables on the right side of \code{formula}
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param cens_name a character string indicating the name of censored covariate from \code{data}
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
 #' @param beta_est the estimate from the augmented complete case estimator
-#' @param m_func the mean function of the regression model
 #' @param cens_ind a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored
 #' @param cov_dist_params a list of parameters for the conditional distribution of the censored covariate given the fully observed covariates
 #' @param sigma2 the estimate of the error variance
-#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"
+#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user_MVN", "AFT"
 #'
 #' @return A vector of the sandwich standard error estimates.
 #'
@@ -242,8 +239,8 @@ aipw_censored <- function(formula,
 #' @import numDeriv
 #'
 #' @export
-aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                          beta_est, m_func, cens_ind, cov_dist_params, sigma2,
+aipw_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
+                          beta_est, cens_ind, cov_dist_params, sigma2,
                           cov_dist_opt){
 
   #convert beta_est to numeric
@@ -374,17 +371,14 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
 #'
 #' @param formula a linear or nonlinear model formula including variables and parameters
 #' @param data a data frame containing columns for the censoring indicator and the variables in \code{formula}
-#' @param Y a character string indicating the name of the outcome from \code{data}
-#' @param varNamesRHS a vector of character strings indicating the names of the variables on the right side of \code{formula}
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param cens_name a character string indicating the name of censored covariate from \code{data}
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
 #' @param beta_est the estimate from the augmented complete case estimator
-#' @param m_func the mean function of the regression model
 #' @param cens_ind a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored
 #' @param cov_dist_params a list of parameters for the conditional distribution of the censored covariate given the fully observed covariates
 #' @param sigma2 the estimate of the error variance
-#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"
+#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user_MVN", "AFT"
 #' @param gh_nodes number of nodes to use in gauss-hermite quadrature.
 #'
 #' @return A vector of the sandwich standard error estimates.
@@ -396,8 +390,8 @@ aipw_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov
 #' @import statmod
 #'
 #' @export
-aipw_sandwich_hermite <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                          beta_est, m_func, cens_ind, cov_dist_params, sigma2,
+aipw_sandwich_hermite <- function(formula, data, par_vec, cens_name, cov_vars,
+                          beta_est, cens_ind, cov_dist_params, sigma2,
                           cov_dist_opt, gh_nodes){
 
   #convert beta_est to numeric

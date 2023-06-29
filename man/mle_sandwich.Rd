@@ -7,13 +7,10 @@
 mle_sandwich(
   formula,
   data,
-  Y,
-  varNamesRHS,
   par_vec,
   cens_name,
   cov_vars,
   beta_est,
-  m_func,
   cens_ind,
   x_cz_dist_params,
   sigma2,
@@ -25,10 +22,6 @@ mle_sandwich(
 
 \item{data}{a data frame containing columns for the censoring indicator and the variables in \code{formula}}
 
-\item{Y}{a character string indicating the name of the outcome from \code{data}}
-
-\item{varNamesRHS}{a vector of character strings indicating the names of the variables on the right side of \code{formula}}
-
 \item{par_vec}{a character string indicating the parameter vector in the formula}
 
 \item{cens_name}{a character string indicating the name of censored covariate from \code{data}}
@@ -37,8 +30,6 @@ mle_sandwich(
 
 \item{beta_est}{the estimate from the augmented complete case estimator}
 
-\item{m_func}{the mean function of the regression model}
-
 \item{cens_ind}{a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored}
 
 \item{x_cz_dist_params}{a list of parameters for the conditional distribution of the censored covariate given the censoring value and fully observed covariates}
@@ -46,6 +37,12 @@ mle_sandwich(
 \item{sigma2}{the estimate of the error variance}
 
 \item{cov_dist_opt}{a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"}
+
+\item{Y}{a character string indicating the name of the outcome from \code{data}}
+
+\item{varNamesRHS}{a vector of character strings indicating the names of the variables on the right side of \code{formula}}
+
+\item{m_func}{the mean function of the regression model}
 }
 \value{
 A vector of the sandwich standard error estimates.

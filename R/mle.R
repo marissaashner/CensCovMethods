@@ -97,7 +97,7 @@ mle_censored <- function(formula,
   model_est_cc = cc_censored(formula, data, cens_ind, par_vec, starting_vals,
                              sandwich_se = FALSE)
   starting_vals = model_est_cc$beta_est %>% as.numeric()
-  sigma2 = model_est_cc$sigma_est
+  sigma2 = model_est_cc$sigma_est^2
 
   if(endsWith(cov_dist_opt,"MVN")){
     multiroot_results = rootSolve::multiroot(multiroot_func_mle_mvn,
@@ -126,8 +126,8 @@ mle_censored <- function(formula,
 
   # run sandwich estimator
   if(sandwich_se){
-    se_est = mle_sandwich(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                           beta_est, m_func, cens_ind, x_cz_dist_params, sigma2,
+    se_est = mle_sandwich(formula, data, par_vec, cens_name, cov_vars,
+                           beta_est, cens_ind, x_cz_dist_params, sigma2,
                           cov_dist_opt)
   }else{
     se_est = NULL
@@ -166,8 +166,8 @@ mle_censored <- function(formula,
 #' @import numDeriv
 #'
 #' @export
-mle_sandwich <- function(formula, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                          beta_est, m_func, cens_ind, x_cz_dist_params, sigma2,
+mle_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
+                          beta_est, cens_ind, x_cz_dist_params, sigma2,
                          cov_dist_opt){
 
   #convert beta_est to numeric
