@@ -93,10 +93,15 @@ ipw_censored <- function(formula,
   # run sandwich estimator
   if(sandwich_se){
     if(se_opt == "known"){
-      se_est = ipw_sandwich(formula, data, cens_ind, par_vec, beta_est, weights, se_opt = "known")
+      se_est = ipw_sandwich(formula, data, cens_ind, par_vec, beta_est, weights,
+                            cens_name = cens_name,
+                            weights_cov = weights_cov,
+                            se_opt = "known")
     }else if(se_opt == "est_MVN"){
       se_est = ipw_sandwich(formula, data, cens_ind, par_vec, beta_est, weights,
                             params = mvn_results$params,
+                            cens_name = cens_name,
+                            weights_cov = weights_cov,
                             se_opt = "est_MVN")
     }
 
@@ -123,6 +128,8 @@ ipw_censored <- function(formula,
 #' @param beta_est the estimate from the complete case estimator
 #' @param weights a vector of weights for the IPW estimating function
 #' @param se_opt a character string indicating if the weights are assumed to be known or if they are estimated. One of \code{c("known", "est_MVN")}.
+#' @param cens_name a character string indicating the name of censored covariate from \code{data}
+#' @param weights_cov if \code{se_opt = "est_MVN"}, a character string indicating the name of the variable from \code{data} that was used as a predictor in the weights model. Otherwise \code{NULL}.
 #' @param params if \code{se_opt = "est_MVN"}, a vector of nine parameter estimates representing those estimated from the maximum likelihood technique.
 #'
 #' @return A vector of the sandwich standard error estimates.
@@ -140,6 +147,8 @@ ipw_sandwich <- function(formula,
                         beta_est,
                         weights,
                         se_opt = "known",
+                        cens_name,
+                        weights_cov,
                         params = NULL){
 
   #convert beta_est to numeric
