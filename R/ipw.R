@@ -300,8 +300,8 @@ g_gamma = function(params, data, beta_est, m_func, par_vec, varNamesRHS, cens_in
                         nrow = 3))
 
   weights = pnorm(log(data[cens_name]%>% as.numeric()),
-                  mean = mvn_results$params[2],
-                  sd = sqrt(mvn_results$params[5]), lower.tail = FALSE)/
+                  mean = mu_joint[2],
+                  sd = sqrt(Sigma_joint[2,2]), lower.tail = FALSE)/
     condMVNorm::pcmvnorm(lower = log(data[cens_name]%>% as.numeric()), upper = Inf,
                                    mean = mu_joint, sigma = Sigma_joint,
                                    dependent.ind = 2,
