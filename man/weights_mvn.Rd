@@ -20,6 +20,7 @@ A list with the following elements:
 \item{weights}{a vector of weights}
 \item{mu_joint}{the mean of the joint multivariate normal distribution of the log of the censored covariate, the log of the censored value, and the fully observed covariate.}
 \item{Sigma_joint}{the covariance matrix of the joint multivariate normal distribution of the log of the censored covariate, the log of the censored value, and the fully observed covariate.}
+\item{params}{a vector of nine parameter estimates representing those estimated from the maximum likelihood technique.}
 }
 \description{
 Calculates the inverse probability of being censored given one fully observed covariate and the censoring value by maximizing the likelihood of a multivariate normal. The multivariate nornmal is the joint distribution of the joint multivariate normal distribution of the log of the censored covariate, the log of the censored value, and the fully observed covariate.

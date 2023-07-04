@@ -4,7 +4,16 @@
 \alias{ipw_sandwich}
 \title{Sandwich Estimator for Inverse Probability Weighting for Censored Covariates}
 \usage{
-ipw_sandwich(formula, data, cens_ind, par_vec, beta_est, weights)
+ipw_sandwich(
+  formula,
+  data,
+  cens_ind,
+  par_vec,
+  beta_est,
+  weights,
+  se_opt = "known",
+  params = NULL
+)
 }
 \arguments{
 \item{formula}{a linear or nonlinear model formula including variables and parameters}
@@ -18,6 +27,10 @@ ipw_sandwich(formula, data, cens_ind, par_vec, beta_est, weights)
 \item{beta_est}{the estimate from the complete case estimator}
 
 \item{weights}{a vector of weights for the IPW estimating function}
+
+\item{se_opt}{a character string indicating if the weights are assumed to be known or if they are estimated. One of \code{c("known", "est_MVN")}.}
+
+\item{params}{if \code{se_opt = "est_MVN"}, a vector of nine parameter estimates representing those estimated from the maximum likelihood technique.}
 }
 \value{
 A vector of the sandwich standard error estimates.

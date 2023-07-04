@@ -16,7 +16,8 @@ ipw_censored(
   weights_user = NULL,
   weights_cov = NULL,
   weights_threshold = NULL,
-  weight_stabilize = "None"
+  weight_stabilize = "None",
+  se_opt = "known"
 )
 }
 \arguments{
@@ -43,6 +44,8 @@ ipw_censored(
 \item{weights_threshold}{the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.}
 
 \item{weight_stabilize}{a character string indicating which method of weight stabilization is to be done (if any). One of \code{c("Mean", "KM", "None")}.}
+
+\item{se_opt}{a character string indicating if the weights are assumed to be known or if they are estimated. One of \code{c("known", "est_MVN")}.}
 }
 \value{
 A list with the following elements:

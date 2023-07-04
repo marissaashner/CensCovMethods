@@ -82,6 +82,7 @@ weights_aft <- function(data, cens_ind, weights_cov, cens_name){
 #' \item{weights}{a vector of weights}
 #' \item{mu_joint}{the mean of the joint multivariate normal distribution of the log of the censored covariate, the log of the censored value, and the fully observed covariate.}
 #' \item{Sigma_joint}{the covariance matrix of the joint multivariate normal distribution of the log of the censored covariate, the log of the censored value, and the fully observed covariate.}
+#' \item{params}{a vector of nine parameter estimates representing those estimated from the maximum likelihood technique.}
 #'
 #' @import tidyverse
 #' @import condMVNorm
@@ -116,7 +117,8 @@ weights_mvn <- function(data, cens_ind, weights_cov, cens_name){
                          X.given = c(log(dat_row[cens_name]%>% as.numeric()),
                                      dat_row[weights_cov]%>% as.numeric())))
 
-  return_list = list(weights = weights, mu_joint = mu_joint, Sigma_joint = Sigma_joint)
+  return_list = list(weights = weights, mu_joint = mu_joint,
+                     Sigma_joint = Sigma_joint, params = params)
 
   return(return_list)
 }
