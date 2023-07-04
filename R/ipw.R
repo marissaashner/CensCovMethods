@@ -70,7 +70,7 @@ ipw_censored <- function(formula,
   }else if(weight_stabilize == "Mean"){
     weights = weights*mean(data[cens_ind] %>% unlist())
   }else if(weight_stabilize == "MVN"){
-    weights = weights*pnorm(log(data[cens_name] %>% as.numeric()),
+    weights = weights*pnorm(log(data[cens_name] %>% unlist()),
                             mean = mvn_results$params[2],
                             sd = sqrt(mvn_results$params[5]), lower.tail = FALSE)
   }
