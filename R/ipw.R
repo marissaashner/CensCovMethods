@@ -266,7 +266,7 @@ ipw_sandwich <- function(formula,
 
     # need to get the outer product of g at each observation and take the mean
     gs = apply(data, 1, function(temp)
-      g(temp, beta_est, m_func, par_vec, varNamesRHS, cens_ind, cens_name, weights_cov) -
+      g(temp, beta_est, m_func, par_vec, varNamesRHS, cens_ind) -
         first_der_gamma%*%solve(first_der_f)%*%f_gamma(params, cens_name, weights_cov, cens_ind, temp))
     if(length(beta_est) > 1){
       outer_prod = apply(gs, 2, function(g) g%*%t(g))
