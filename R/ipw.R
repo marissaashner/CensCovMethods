@@ -68,7 +68,11 @@ ipw_censored <- function(formula,
     data <- data %>% dplyr::left_join(km_data %>% unique(), by = cens_name)
     weights = weights*data$surv_km
   }else if(weight_stabilize == "Mean"){
-    weights = weights*mean(data[cens_name] %>% unlist())
+    weights = weights*mean(data[cens_ind] %>% unlist())
+  }else if(weight_stabilize == "MVN"){
+    weights = weights*pnorm(log(data[cens_name]),
+                            mean = mvn_results$params[2],
+                            sd = sqrt(mvn_results$params[5]), lower.tail = FALSE)
   }
 
   # thresholding
@@ -295,7 +299,10 @@ g_gamma = function(params, data, beta_est, m_func, par_vec, varNamesRHS, cens_in
                           params[8], params[9], params[6]),
                         nrow = 3))
 
-  weights = 1/condMVNorm::pcmvnorm(lower = log(data[cens_name]%>% as.numeric()), upper = Inf,
+  weights = pnorm(log(data[cens_name]%>% as.numeric()),
+                  mean = mvn_results$params[2],
+                  sd = sqrt(mvn_results$params[5]), lower.tail = FALSE)/
+    condMVNorm::pcmvnorm(lower = log(data[cens_name]%>% as.numeric()), upper = Inf,
                                    mean = mu_joint, sigma = Sigma_joint,
                                    dependent.ind = 2,
                                    given = c(1,3),
