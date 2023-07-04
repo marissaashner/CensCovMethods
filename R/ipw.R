@@ -97,7 +97,7 @@ ipw_censored <- function(formula,
     }else if(se_opt == "est_MVN"){
       se_est = ipw_sandwich(formula, data, cens_ind, par_vec, beta_est, weights,
                             params = mvn_results$params,
-                            se_opt = "known")
+                            se_opt = "est_MVN")
     }
 
   }else{
