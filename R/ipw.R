@@ -245,7 +245,8 @@ ipw_sandwich <- function(formula,
   }else if(se_opt == "est_MVN"){
     # take the first derivative of g_gamma
     first_der_gamma <- apply(data, 1, function(temp){
-      firstderivative_g_gamma(params, beta_est, g_gamma, temp, varNamesRHS, par_vec, m_func, cens_ind)
+      firstderivative_g_gamma(params, beta_est, g_gamma, temp, varNamesRHS, par_vec, m_func,
+                              cens_ind, cens_name, weights_cov)
     })
     if(length(beta_est) > 1){
       first_der_gamma = first_der_gamma %>% rowMeans() %>% matrix(nrow = length(beta_est))
@@ -265,7 +266,7 @@ ipw_sandwich <- function(formula,
 
     # need to get the outer product of g at each observation and take the mean
     gs = apply(data, 1, function(temp)
-      g(temp, beta_est, m_func, par_vec, varNamesRHS, cens_ind) -
+      g(temp, beta_est, m_func, par_vec, varNamesRHS, cens_ind, cens_name, weights_cov) -
         first_der_gamma%*%solve(first_der_f)%*%f_gamma(params, cens_name, weights_cov, cens_ind, temp))
     if(length(beta_est) > 1){
       outer_prod = apply(gs, 2, function(g) g%*%t(g))
@@ -286,7 +287,8 @@ ipw_sandwich <- function(formula,
 ##### helper functions for MVN est outer product
 
 # g as a function of gamma
-g_gamma = function(params, data, beta_est, m_func, par_vec, varNamesRHS, cens_ind){
+g_gamma = function(params, data, beta_est, m_func, par_vec, varNamesRHS, cens_ind,
+                   cens_name, weights_cov){
   mu_joint = c(params[1], params[2], params[3])
   Sigma_joint = (matrix(c(params[4], params[7], params[8],
                           params[7], params[5], params[9],
@@ -337,7 +339,7 @@ f_gamma = function(params, cens_name, weights_cov, cens_ind, data){
 }
 
 firstderivative_g_gamma <- function(params, beta, g_gamma, data, varNamesRHS, par_vec,
-                            m_func, cens_ind){
+                            m_func, cens_ind, cens_name, weights_cov){
   lb <- length(params)
   derivs <- matrix(data = 0, nrow = length(beta), ncol = lb)
   delta <- params * (10 ^ (- 4))
@@ -348,8 +350,8 @@ firstderivative_g_gamma <- function(params, beta, g_gamma, data, varNamesRHS, pa
     paramsr[i] <- params[i] + delta[i]
 
     # Calculate function values
-    yout1 <- g_gamma(paramsl, data, beta, m_func, par_vec, varNamesRHS, cens_ind)
-    yout2 <- g_gamma(paramsr, data, beta, m_func, par_vec, varNamesRHS, cens_ind)
+    yout1 <- g_gamma(paramsl, data, beta, m_func, par_vec, varNamesRHS, cens_ind, cens_name, weights_cov)
+    yout2 <- g_gamma(paramsr, data, beta, m_func, par_vec, varNamesRHS, cens_ind, cens_name, weights_cov)
 
     # Calculate derivative and save in vector A
     derivs[,i] <- (yout2 - yout1) / (2 * delta[i])
