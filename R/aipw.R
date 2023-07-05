@@ -205,11 +205,11 @@ aipw_censored <- function(formula,
   # run sandwich estimator
   if(sandwich_se){
     if(!gh){
-      se_est = aipw_sandwich(formula, data, par_vec, cens_name, cov_vars,
+      se_est = aipw_sandwich(formula, data, par_vec, cens_name, cov_vars, weights_cov,
                              beta_est, cens_ind, cov_dist_params, sigma2,
                              cov_dist_opt)
     }else{
-        se_est = aipw_sandwich_hermite(formula, data, par_vec, cens_name, cov_vars,
+        se_est = aipw_sandwich_hermite(formula, data, par_vec, cens_name, cov_vars, weights_cov,
                                        beta_est, cens_ind, cov_dist_params, sigma2,
                                        cov_dist_opt, gh_nodes, params, se_opt)
     }
@@ -237,6 +237,7 @@ aipw_censored <- function(formula,
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param cens_name a character string indicating the name of censored covariate from \code{data}
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
+#' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.
 #' @param beta_est the estimate from the augmented complete case estimator
 #' @param cens_ind a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored
 #' @param cov_dist_params a list of parameters for the conditional distribution of the censored covariate given the fully observed covariates
@@ -251,7 +252,7 @@ aipw_censored <- function(formula,
 #' @import numDeriv
 #'
 #' @export
-aipw_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
+aipw_sandwich <- function(formula, data, par_vec, cens_name, cov_vars, weights_cov,
                           beta_est, cens_ind, cov_dist_params, sigma2,
                           cov_dist_opt){
 
@@ -386,6 +387,7 @@ aipw_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param cens_name a character string indicating the name of censored covariate from \code{data}
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
+#' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.
 #' @param beta_est the estimate from the augmented complete case estimator
 #' @param cens_ind a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored
 #' @param cov_dist_params a list of parameters for the conditional distribution of the censored covariate given the fully observed covariates
@@ -404,7 +406,7 @@ aipw_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
 #' @import statmod
 #'
 #' @export
-aipw_sandwich_hermite <- function(formula, data, par_vec, cens_name, cov_vars,
+aipw_sandwich_hermite <- function(formula, data, par_vec, cens_name, cov_vars, weights_cov,
                           beta_est, cens_ind, cov_dist_params, sigma2,
                           cov_dist_opt, gh_nodes, params = NULL, se_opt = "known"){
 
@@ -585,6 +587,7 @@ g_gamma_aipw = function(params, data, beta_est, m_func, par_vec, varNamesRHS, ce
 
   ipw_piece + aipw_piece
 }
+
 
 firstderivative_g_gamma_aipw <- function(params, beta, g_gamma, data, varNamesRHS, par_vec,
                                     m_func, cens_ind, cens_name, weights_cov, Y,

@@ -10,6 +10,7 @@ aipw_sandwich_hermite(
   par_vec,
   cens_name,
   cov_vars,
+  weights_cov,
   beta_est,
   cens_ind,
   cov_dist_params,
@@ -30,6 +31,8 @@ aipw_sandwich_hermite(
 \item{cens_name}{a character string indicating the name of censored covariate from \code{data}}
 
 \item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.}
+
+\item{weights_cov}{if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.}
 
 \item{beta_est}{the estimate from the augmented complete case estimator}
 
