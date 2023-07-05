@@ -15,7 +15,9 @@ aipw_sandwich_hermite(
   cov_dist_params,
   sigma2,
   cov_dist_opt,
-  gh_nodes
+  gh_nodes,
+  params = NULL,
+  se_opt = "known"
 )
 }
 \arguments{
@@ -40,6 +42,10 @@ aipw_sandwich_hermite(
 \item{cov_dist_opt}{a character string indicating specification of the covariate distribution. One of "MVN", "user_MVN", "AFT"}
 
 \item{gh_nodes}{number of nodes to use in gauss-hermite quadrature.}
+
+\item{params}{if \code{se_opt = "est_MVN"}, a vector of nine parameter estimates representing those estimated from the maximum likelihood technique.}
+
+\item{se_opt}{a character string indicating if the weights are assumed to be known or if they are estimated. One of \code{c("known", "est_MVN")}.}
 }
 \value{
 A vector of the sandwich standard error estimates.

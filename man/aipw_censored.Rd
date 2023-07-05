@@ -12,6 +12,7 @@ aipw_censored(
   par_vec,
   starting_vals,
   sandwich_se = TRUE,
+  se_opt = "known",
   weight_opt,
   weights_user = NULL,
   weights_cov = NULL,
@@ -40,6 +41,8 @@ aipw_censored(
 \item{starting_vals}{the starting values for the least squares algorithm. Must be a vector equal in length of the parameter vector}
 
 \item{sandwich_se}{if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated}
+
+\item{se_opt}{a character string indicating if the weights are assumed to be known or if they are estimated. One of \code{c("known", "est_MVN")}.}
 
 \item{weight_opt}{a character string indicating the method of weight calculation. One of "Cox", "AFT_lognormal", "MVN", "user" (if "user", then user provides weights).}
 

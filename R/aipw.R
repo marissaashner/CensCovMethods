@@ -9,6 +9,7 @@
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param starting_vals the starting values for the least squares algorithm. Must be a vector equal in length of the parameter vector
 #' @param sandwich_se if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated
+#' @param se_opt a character string indicating if the weights are assumed to be known or if they are estimated. One of \code{c("known", "est_MVN")}.
 #' @param weight_opt a character string indicating the method of weight calculation. One of "Cox", "AFT_lognormal", "MVN", "user" (if "user", then user provides weights).
 #' @param weights_user if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default).
 #' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.
@@ -41,6 +42,7 @@ aipw_censored <- function(formula,
                          par_vec,
                          starting_vals,
                          sandwich_se = TRUE,
+                         se_opt = "known",
                          weight_opt,
                          weights_user = NULL,
                          weights_cov = NULL,
@@ -81,6 +83,10 @@ aipw_censored <- function(formula,
     weights = weights*data$surv_km
   }else if(weight_stabilize == "Mean"){
     weights = weights*mean(data[cens_name] %>% unlist())
+  }else if(weight_stabilize == "MVN"){
+    weights = weights*pnorm(log(data[cens_name] %>% unlist()),
+                            mean = mvn_results$params[2],
+                            sd = sqrt(mvn_results$params[5]), lower.tail = FALSE)
   }
 
 
@@ -190,6 +196,12 @@ aipw_censored <- function(formula,
 
   print("Parameters estimated!")
 
+  if(se_opt == "known"){
+    params = NULL
+  }else if(se_opt == "est_MVN"){
+    params = mvn_results$params
+  }
+
   # run sandwich estimator
   if(sandwich_se){
     if(!gh){
@@ -197,9 +209,9 @@ aipw_censored <- function(formula,
                              beta_est, cens_ind, cov_dist_params, sigma2,
                              cov_dist_opt)
     }else{
-      se_est = aipw_sandwich_hermite(formula, data, par_vec, cens_name, cov_vars,
-                             beta_est, cens_ind, cov_dist_params, sigma2,
-                             cov_dist_opt, gh_nodes)
+        se_est = aipw_sandwich_hermite(formula, data, par_vec, cens_name, cov_vars,
+                                       beta_est, cens_ind, cov_dist_params, sigma2,
+                                       cov_dist_opt, gh_nodes, params, se_opt)
     }
 
     print("Standard Errors estimated!")
@@ -380,6 +392,8 @@ aipw_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
 #' @param sigma2 the estimate of the error variance
 #' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user_MVN", "AFT"
 #' @param gh_nodes number of nodes to use in gauss-hermite quadrature.
+#' @param params if \code{se_opt = "est_MVN"}, a vector of nine parameter estimates representing those estimated from the maximum likelihood technique.
+#' @param se_opt a character string indicating if the weights are assumed to be known or if they are estimated. One of \code{c("known", "est_MVN")}.
 #'
 #' @return A vector of the sandwich standard error estimates.
 #'
@@ -392,7 +406,7 @@ aipw_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
 #' @export
 aipw_sandwich_hermite <- function(formula, data, par_vec, cens_name, cov_vars,
                           beta_est, cens_ind, cov_dist_params, sigma2,
-                          cov_dist_opt, gh_nodes){
+                          cov_dist_opt, gh_nodes, params = NULL, se_opt = "known"){
 
   #convert beta_est to numeric
   beta_est = beta_est %>% as.numeric()
@@ -479,17 +493,54 @@ aipw_sandwich_hermite <- function(formula, data, par_vec, cens_name, cov_vars,
   }
   inv_first_der <- solve(first_der)
 
-  # need to get the outer product of g at each observation and take the mean
-  gs = apply(data, 1, function(temp)
-    g(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-      beta_est, m_func, cens_ind, cov_dist_params, sigma2, gh_nodes))
-  if(length(beta_est) > 1){
-    outer_prod = apply(gs, 2, function(g) g%*%t(g))
-    outer_prod = outer_prod %>% rowMeans() %>% matrix(nrow = length(beta_est))
-  }else{
-    outer_prod = gs^2
-    outer_prod = outer_prod %>% mean()
+  if(se_opt == "known"){
+    # need to get the outer product of g at each observation and take the mean
+    gs = apply(data, 1, function(temp)
+      g(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+        beta_est, m_func, cens_ind, cov_dist_params, sigma2, gh_nodes))
+    if(length(beta_est) > 1){
+      outer_prod = apply(gs, 2, function(g) g%*%t(g))
+      outer_prod = outer_prod %>% rowMeans() %>% matrix(nrow = length(beta_est))
+    }else{
+      outer_prod = gs^2
+      outer_prod = outer_prod %>% mean()
+    }
+  }else if(se_opt == "est_MVN"){
+    # take the first derivative of g_gamma
+    first_der_gamma <- apply(data, 1, function(temp){
+      firstderivative_g_gamma_aipw(params, beta_est, g_gamma_aipw, temp, varNamesRHS, par_vec, m_func,
+                              cens_ind, cens_name, weights_cov, Y,
+                              cov_vars, cov_dist_params, sigma_2, gh_nodes)
+    })
+    if(length(beta_est) > 1){
+      first_der_gamma = first_der_gamma %>% rowMeans() %>% matrix(nrow = length(beta_est))
+    }else{
+      first_der_gamma = first_der_gamma %>% mean()
+    }
+
+    # take the first derivative of f
+    first_der_f <- apply(data, 1, function(temp){
+      firstderivative_f_gamma(params, f_gamma, temp, cens_ind, cens_name, weights_cov)
+    })
+    if(length(beta_est) > 1){
+      first_der_f = first_der_f %>% rowMeans() %>% matrix(nrow = length(params))
+    }else{
+      first_der_f = first_der_f %>% mean()
+    }
+
+    # need to get the outer product of g at each observation and take the mean
+    gs = apply(data, 1, function(temp)
+      g(temp, beta_est, m_func, par_vec, varNamesRHS, cens_ind) -
+        first_der_gamma%*%solve(first_der_f)%*%f_gamma(params, cens_name, weights_cov, cens_ind, temp))
+    if(length(beta_est) > 1){
+      outer_prod = apply(gs, 2, function(g) g%*%t(g))
+      outer_prod = outer_prod %>% rowMeans() %>% matrix(nrow = length(beta_est))
+    }else{
+      outer_prod = gs^2
+      outer_prod = outer_prod %>% mean()
+    }
   }
+
 
 
   ## then need to put it all together
@@ -497,4 +548,81 @@ aipw_sandwich_hermite <- function(formula, data, par_vec, cens_name, cov_vars,
   return(se)
 
 }
+
+
+##### helper functions for MVN est outer product
+
+# g as a function of gamma
+g_gamma_aipw = function(params, data, beta_est, m_func, par_vec, varNamesRHS, cens_ind,
+                   cens_name, weights_cov, Y, cov_vars, cov_dist_params, sigma_2, gh_nodes){
+  mu_joint = c(params[1], params[2], params[3])
+  Sigma_joint = (matrix(c(params[4], params[7], params[8],
+                          params[7], params[5], params[9],
+                          params[8], params[9], params[6]),
+                        nrow = 3))
+
+  weights = pnorm(log(data[cens_name]%>% as.numeric()),
+                  mean = mu_joint[2],
+                  sd = sqrt(Sigma_joint[2,2]), lower.tail = FALSE)/
+    condMVNorm::pcmvnorm(lower = log(data[cens_name]%>% as.numeric()), upper = Inf,
+                         mean = mu_joint, sigma = Sigma_joint,
+                         dependent.ind = 2,
+                         given = c(1,3),
+                         X.given = c(log(data[cens_name]%>% as.numeric()),
+                                     data[weights_cov]%>% as.numeric()))
+
+  p = c(beta_est, data[varNamesRHS])%>% as.numeric()
+  names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
+
+  ##### CHANGE THIS TO AIPW G
+  ipw_piece = rep(as.numeric(data[[cens_ind]])*as.numeric(weights),
+      length(beta_est)) %>% as.numeric()*
+    numDeriv::jacobian(m_func, p)[1:length(beta_est)]*
+    rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
+  aipw_piece = rep(1 - as.numeric(data[[cens_ind]])*as.numeric(weights), length(beta_est)) %>% as.numeric()*
+    psi_hat_i_hermite_aipw(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                           beta_est, m_func, cov_dist_params, sigma2, gh_nodes)
+
+  ipw_piece + aipw_piece
+}
+
+firstderivative_g_gamma_aipw <- function(params, beta, g_gamma, data, varNamesRHS, par_vec,
+                                    m_func, cens_ind, cens_name, weights_cov, Y,
+                                    cov_vars, cov_dist_params, sigma_2, gh_nodes){
+  lb <- length(params)
+  derivs <- matrix(data = 0, nrow = length(beta), ncol = lb)
+  delta <- params * (10 ^ (- 4))
+  paramsl <- paramsr <- params
+  for (i in 1:lb) {
+    # Perturb the ith element of beta
+    paramsl[i] <- params[i] - delta[i]
+    paramsr[i] <- params[i] + delta[i]
+
+    # Calculate function values
+    yout1 <- g_gamma(paramsl, data, beta, m_func, par_vec, varNamesRHS,
+                     cens_ind, cens_name, weights_cov, Y,
+                     cov_vars, cov_dist_params, sigma_2, gh_nodes)
+    yout2 <- g_gamma(paramsr, data, beta, m_func, par_vec, varNamesRHS,
+                     cens_ind, cens_name, weights_cov, Y,
+                     cov_vars, cov_dist_params, sigma_2, gh_nodes)
+
+    # Calculate derivative and save in vector A
+    derivs[,i] <- (yout2 - yout1) / (2 * delta[i])
+
+    # Reset parameter vectors
+    paramsl <- paramsr <- params
+  }
+  #print("hi")
+  return(derivs)
+}
+
+
+
+
+
+
+
+
+
+
 
