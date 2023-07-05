@@ -512,7 +512,7 @@ aipw_sandwich_hermite <- function(formula, data, par_vec, cens_name, cov_vars, w
     first_der_gamma <- apply(data, 1, function(temp){
       firstderivative_g_gamma_aipw(params, beta_est, g_gamma_aipw, temp, varNamesRHS, par_vec, m_func,
                               cens_ind, cens_name, weights_cov, Y,
-                              cov_vars, cov_dist_params, sigma_2, gh_nodes)
+                              cov_vars, cov_dist_params, sigma2, gh_nodes)
     })
     if(length(beta_est) > 1){
       first_der_gamma = first_der_gamma %>% rowMeans() %>% matrix(nrow = length(beta_est))
@@ -556,7 +556,7 @@ aipw_sandwich_hermite <- function(formula, data, par_vec, cens_name, cov_vars, w
 
 # g as a function of gamma
 g_gamma_aipw = function(params, data, beta_est, m_func, par_vec, varNamesRHS, cens_ind,
-                   cens_name, weights_cov, Y, cov_vars, cov_dist_params, sigma_2, gh_nodes){
+                   cens_name, weights_cov, Y, cov_vars, cov_dist_params, sigma2, gh_nodes){
   mu_joint = c(params[1], params[2], params[3])
   Sigma_joint = (matrix(c(params[4], params[7], params[8],
                           params[7], params[5], params[9],
@@ -591,7 +591,7 @@ g_gamma_aipw = function(params, data, beta_est, m_func, par_vec, varNamesRHS, ce
 
 firstderivative_g_gamma_aipw <- function(params, beta, g_gamma, data, varNamesRHS, par_vec,
                                     m_func, cens_ind, cens_name, weights_cov, Y,
-                                    cov_vars, cov_dist_params, sigma_2, gh_nodes){
+                                    cov_vars, cov_dist_params, sigma2, gh_nodes){
   lb <- length(params)
   derivs <- matrix(data = 0, nrow = length(beta), ncol = lb)
   delta <- params * (10 ^ (- 4))
@@ -604,10 +604,10 @@ firstderivative_g_gamma_aipw <- function(params, beta, g_gamma, data, varNamesRH
     # Calculate function values
     yout1 <- g_gamma(paramsl, data, beta, m_func, par_vec, varNamesRHS,
                      cens_ind, cens_name, weights_cov, Y,
-                     cov_vars, cov_dist_params, sigma_2, gh_nodes)
+                     cov_vars, cov_dist_params, sigma2, gh_nodes)
     yout2 <- g_gamma(paramsr, data, beta, m_func, par_vec, varNamesRHS,
                      cens_ind, cens_name, weights_cov, Y,
-                     cov_vars, cov_dist_params, sigma_2, gh_nodes)
+                     cov_vars, cov_dist_params, sigma2, gh_nodes)
 
     # Calculate derivative and save in vector A
     derivs[,i] <- (yout2 - yout1) / (2 * delta[i])
