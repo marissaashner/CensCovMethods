@@ -82,7 +82,7 @@ aipw_censored <- function(formula,
     data <- data %>% dplyr::left_join(km_data %>% unique(), by = cens_name)
     weights = weights*data$surv_km
   }else if(weight_stabilize == "Mean"){
-    weights = weights*mean(data[cens_name] %>% unlist())
+    weights = weights*mean(data[cens_ind] %>% unlist())
   }else if(weight_stabilize == "MVN"){
     weights = weights*pnorm(log(data[cens_name] %>% unlist()),
                             mean = mvn_results$params[2],
@@ -532,7 +532,8 @@ aipw_sandwich_hermite <- function(formula, data, par_vec, cens_name, cov_vars, w
 
     # need to get the outer product of g at each observation and take the mean
     gs = apply(data, 1, function(temp)
-      g(temp, beta_est, m_func, par_vec, varNamesRHS, cens_ind) -
+      g(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+        beta_est, m_func, cens_ind, cov_dist_params, sigma2, gh_nodes) -
         first_der_gamma%*%solve(first_der_f)%*%f_gamma(params, cens_name, weights_cov, cens_ind, temp))
     if(length(beta_est) > 1){
       outer_prod = apply(gs, 2, function(g) g%*%t(g))
