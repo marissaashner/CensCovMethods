@@ -10,7 +10,7 @@ hermite_numerator_aipw <- function(x, data_row, cens_name, beta_temp, par_vec,
   names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
   m_t = m_func(p)
   f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
-  numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y/exp(x)
+  numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y
 }
 
 
@@ -21,7 +21,7 @@ hermite_denominator_aipw <- function(x, data_row, cens_name, beta_temp, par_vec,
   names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
   m_t = m_func(p)
   f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
-  f_y/exp(x)
+  f_y
 }
 
 psi_hat_i_hermite_aipw = function(data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
@@ -89,8 +89,8 @@ hermite_numerator_acc <- function(x, data_row, cens_name, beta_temp, par_vec,
   if(is.function(mu_c)){
     mu_c = mu_c(x, cov_dist_params)
   }
-  f_c_xz = pnorm(x, mean = mu_c, sd = sigma_c)
-  numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y*f_c_xz/exp(x)
+  f_c_xz = pnorm(x, mean = mu_c, sd = sigma_c, lower.tail = FALSE)
+  numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y*f_c_xz
 }
 
 
@@ -105,8 +105,8 @@ hermite_denominator_acc <- function(x, data_row, cens_name, beta_temp, par_vec,
   if(is.function(mu_c)){
     mu_c = mu_c(x, cov_dist_params)
   }
-  f_c_xz = pnorm(x, mean = mu_c, sd = sigma_c)
-  f_y*f_c_xz/exp(x)
+  f_c_xz = pnorm(x, mean = mu_c, sd = sigma_c, lower.tail = FALSE)
+  f_y*f_c_xz
 }
 
 psi_hat_i_hermite_acc = function(data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
