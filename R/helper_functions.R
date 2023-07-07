@@ -486,6 +486,7 @@ integral_func_psi_mle_aft <- function(t, data_row, Y, varNamesRHS, par_vec, cens
 multiroot_func_mle_mvn = function(beta_temp, data,
                           Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
                           m_func, mu_joint, Sigma_joint, sigma2){
+  print(beta_temp)
   pieces = apply(data, 1, function(temp){
     p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
     names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
