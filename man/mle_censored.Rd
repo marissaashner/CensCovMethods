@@ -16,6 +16,8 @@ mle_censored(
   cov_vars,
   cov_mean_user = NULL,
   cov_sigma_user = NULL,
+  gh = TRUE,
+  gh_nodes = 10,
   ...
 )
 }
@@ -41,6 +43,10 @@ mle_censored(
 \item{cov_mean_user}{if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}}
 
 \item{cov_sigma_user}{if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distributionof \code{(log(X), log(C), Z)}}
+
+\item{gh}{if \code{TRUE} (default), gauss-hermite quadrature will be run to estimate the integrals. Otherwise, the \code{integrate} function will be used.}
+
+\item{gh_nodes}{number of nodes to use in gauss-hermite quadrature.}
 
 \item{...}{additional arguments passed to function \code{multiroot}.}
 }

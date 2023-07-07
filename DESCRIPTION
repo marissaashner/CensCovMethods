@@ -13,4 +13,4 @@ URL: https://github.com/marissaashner/EECovCensRd
 BugReports: https://github.com/marissaashner/EECovCensRd/issues
 RoxygenNote: 7.1.2
 Imports: 
-    magrittr, statmod, rootSolve, condMVNorm
+    magrittr, statmod, rootSolve, condMVNorm, Bolstad2

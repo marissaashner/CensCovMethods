@@ -168,8 +168,106 @@ multiroot_func_hermite_acc = function(beta_temp, data,
   rowSums(pieces)
 }
 
+###############
+##### MLE #####
+###############
+
+hermite_numerator_mle <- function(x, data_row, cens_name, beta_temp, par_vec,
+                                   varNamesRHS, m_func, Y, sigma2, j){
+  data_row[cens_name] = exp(x)
+  p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+  names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+  m_t = m_func(p)
+  f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+  numDeriv::jacobian(m_func, p)[j]*(data_row[Y] %>% as.numeric()-m_t)*f_y
+}
 
 
+hermite_denominator_mle <- function(x, data_row, cens_name, beta_temp, par_vec,
+                                     varNamesRHS, m_func, Y, sigma2){
+  data_row[cens_name] = exp(x)
+  p = c(beta_temp, data_row[varNamesRHS]) %>% as.numeric()
+  names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+  m_t = m_func(p)
+  f_y = dnorm(data_row[Y] %>% as.numeric(), mean = m_t, sd = sqrt(sigma2))
+  f_y
+}
+
+psi_hat_i_hermite_mle = function(data_row, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                  beta_temp, m_func, cov_dist_params, sigma2, gh_nodes){
+  if(!is.null(cov_dist_params$model_est_x_z_coeff)){
+    mu <- c(1, data_row[cov_vars] %>% as.numeric()) %*% cov_dist_params$model_est_x_z_coeff
+    sigma <- cov_dist_params$model_est_x_z_sd
+  }else if(!is.null(cov_dist_params$mu_joint)){
+    mu <- cov_dist_params$mu_joint[1] +
+      cov_dist_params$Sigma_joint[1, c(2,3)]%*%solve(cov_dist_params$Sigma_joint[c(2,3),c(2,3)])%*%
+      (c(log(data_row[cens_name]) %>% as.numeric(),
+         data_row[cov_vars] %>% as.numeric()) - cov_dist_params$mu_joint[c(2,3)])
+    sigma <- sqrt(cov_dist_params$Sigma_joint[1,1] -
+                    cov_dist_params$Sigma_joint[1,c(2,3)]%*%solve(cov_dist_params$Sigma_joint[c(2,3),c(2,3)])%*%
+                    cov_dist_params$Sigma_joint[c(2,3), 1])
+  }
+
+  gherm <- statmod::gauss.quad.prob(gh_nodes, dist="normal", mu = mu %>% as.numeric(),
+                                    sigma = sigma %>% as.numeric())
+
+  numerator_gh = lapply(1:length(beta_temp), function(j) {
+    sum(gherm$weights * lapply(gherm$nodes, function(node){
+      hermite_numerator_mle(node, data_row, cens_name, beta_temp,
+                             par_vec, varNamesRHS, m_func, Y, sigma2, j)
+    }) %>% unlist())
+  }) %>% unlist()
+
+  denominator_gh = sum(gherm$weights * lapply(gherm$nodes, function(node){
+    hermite_denominator_mle(node, data_row, cens_name, beta_temp,
+                             par_vec, varNamesRHS, m_func, Y, sigma2)
+  }) %>% unlist())
+
+  x_sintegral = seq(0, data_row[cens_name] %>% as.numeric(), length = 100)
+
+  numerator_s = lapply(1:length(beta_temp), function(j){
+    sintegral(x = x_sintegral,
+              fx = integral_func_psi_mle_mvn(x_sintegral, data_row = data_row, Y = Y,
+                                               varNamesRHS = varNamesRHS, par_vec = par_vec,
+                                               cens_name = cens_name, cov_vars = cov_vars,
+                                               beta_temp = beta_temp, m_func = m_func,
+                                               C_val = data_row[cens_name]  %>% as.numeric(),
+                                               mu_joint = mu_joint, Sigma_joint = Sigma_joint,
+                                               j = j, sigma2 = sigma2))$int
+  }) %>% unlist()
+
+
+  denominator_s = sintegral(x = x_sintegral,
+                            fx = integral_func_denom_mle_mvn(x_sintegral, data_row = data_row, Y = Y,
+                                                             varNamesRHS = varNamesRHS, par_vec = par_vec,
+                                                             cens_name = cens_name, cov_vars = cov_vars,
+                                                             beta_temp = beta_temp, m_func = m_func,
+                                                             C_val = data_row[cens_name]  %>% as.numeric(),
+                                                             mu_joint = mu_joint, Sigma_joint = Sigma_joint,
+                                                             sigma2 = sigma2))$int
+
+  (numerator_gh-numerator_s)/(denominator_gh-denominator_s)
+}
+
+multiroot_func_hermite_mle = function(beta_temp, data,
+                                       Y, varNamesRHS, par_vec, cens_name, cov_vars, cens_ind,
+                                       m_func, cov_dist_params, sigma2, gh_nodes){
+  print(beta_temp)
+  pieces = apply(data, 1, function(temp){
+    p = c(beta_temp, temp[varNamesRHS]) %>% as.numeric()
+    names(p) = c(paste0(par_vec, seq(1:length(beta_temp))), varNamesRHS)
+    if(temp[cens_ind] == 1){
+      piece = numDeriv::jacobian(m_func, p)[1:length(beta_temp)]*
+        rep(temp[Y] %>% as.numeric()-m_func(p), length(beta_temp))
+    }else{
+      piece = psi_hat_i_hermite_mle(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
+                                beta_temp, m_func, cov_dist_params, sigma2, gh_nodes)
+    }
+    # print(piece)
+    piece
+  }) %>% unname()
+  rowSums(pieces)
+}
 
 
 
