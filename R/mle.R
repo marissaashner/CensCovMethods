@@ -335,7 +335,7 @@ mle_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
 #' @import tidyverse
 #' @importFrom rootSolve multiroot
 #' @import survival
-#' @import numDeriv#'
+#' @import numDeriv
 #' @importFrom Bolstad2 sintegral
 #'
 #' @export
