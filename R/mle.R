@@ -120,7 +120,7 @@ mle_censored <- function(formula,
                                              m_func = m_func, model_est_x_z_coeff = model_est_x_z_coeff,
                                              model_est_x_z_sd = model_est_x_z_sd, sigma2 = sigma2,
                                              start = starting_vals, ...)
-  }else if (gh){
+  }else if(gh){
     multiroot_results = rootSolve::multiroot(multiroot_func_hermite_mle,
                                              data = data,
                                              Y = Y, varNamesRHS = varNamesRHS, par_vec = par_vec,
@@ -217,7 +217,7 @@ mle_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
   # create "g" function for the sandwich estimator
   if(endsWith(cov_dist_opt, "MVN")){
     g = function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                 beta_est, m_func, cens_ind, x_cz_dist_params, sigma2){
+                 beta_est, m_func, cens_ind, cov_dist_params, sigma2){
       p = c(beta_est, data[varNamesRHS])  %>% as.numeric()
       names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
@@ -226,13 +226,13 @@ mle_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
           rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
       }else{
         psi_hat_i_mle_mvn(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                      beta_est, m_func, x_cz_dist_params$mu_joint,
-                      x_cz_dist_params$Sigma_joint, sigma2)
+                      beta_est, m_func, cov_dist_params$mu_joint,
+                      cov_dist_params$Sigma_joint, sigma2)
       }
     }
   }else if(cov_dist_opt == "AFT"){
     g = function(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                 beta_est, m_func, cens_ind, x_cz_dist_params, sigma2){
+                 beta_est, m_func, cens_ind, cov_dist_params, sigma2){
       p = c(beta_est, data[varNamesRHS])  %>% as.numeric()
       names(p) = c(paste0(par_vec, seq(1:length(beta_est))), varNamesRHS)
 
@@ -241,8 +241,8 @@ mle_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
           rep(data[Y]  %>% as.numeric()-m_func(p), length(beta_est)) %>% as.numeric()
       }else{
         psi_hat_i_mle_aft(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                      beta_est, m_func, x_cz_dist_params$model_est_x_z_coeff,
-                      x_cz_dist_params$model_est_x_z_sd, sigma2)
+                      beta_est, m_func, cov_dist_params$model_est_x_z_coeff,
+                      cov_dist_params$model_est_x_z_sd, sigma2)
       }
     }
   }
@@ -253,7 +253,7 @@ mle_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
   # f(x;beta) where beta is of length lb, x is a scalar
   # first derivative = ( f(beta+ delta) - f(beta-delta) )/ (2 * delta)
   firstderivative <- function(beta, g, data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                              m_func, cens_ind, x_cz_dist_params, sigma2){
+                              m_func, cens_ind, cov_dist_params, sigma2){
     lb <- length(beta)
     derivs <- matrix(data = 0, nrow = lb, ncol = lb)
     delta <- beta * (10 ^ (- 4))
@@ -265,9 +265,9 @@ mle_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
 
       # Calculate function values
       yout1 <- g(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                 betal, m_func, cens_ind, x_cz_dist_params, sigma2)
+                 betal, m_func, cens_ind, cov_dist_params, sigma2)
       yout2 <- g(data, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                 betar, m_func, cens_ind, x_cz_dist_params, sigma2)
+                 betar, m_func, cens_ind, cov_dist_params, sigma2)
 
       # Calculate derivative and save in vector A
       derivs[i,] <- (yout2 - yout1) / (2 * delta[i])
@@ -282,7 +282,7 @@ mle_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
   # take the inverse first derivative of g
   first_der <- apply(data, 1, function(temp){
     firstderivative(beta_est, g, temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-                    m_func, cens_ind, x_cz_dist_params, sigma2)
+                    m_func, cens_ind, cov_dist_params, sigma2)
   })
   if(length(beta_est) > 1){
     first_der = first_der %>% rowMeans() %>% matrix(nrow = length(beta_est))
@@ -294,7 +294,7 @@ mle_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
   # need to get the outer product of g at each observation and take the mean
   gs = apply(data, 1, function(temp)
     g(temp, Y, varNamesRHS, par_vec, cens_name, cov_vars,
-      beta_est, m_func, cens_ind, x_cz_dist_params, sigma2))
+      beta_est, m_func, cens_ind, cov_dist_params, sigma2))
   if(length(beta_est) > 1){
     outer_prod = apply(gs, 2, function(g) g%*%t(g))
     outer_prod = outer_prod %>% rowMeans() %>% matrix(nrow = length(beta_est))

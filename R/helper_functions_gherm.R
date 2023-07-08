@@ -227,24 +227,49 @@ psi_hat_i_hermite_mle = function(data_row, Y, varNamesRHS, par_vec, cens_name, c
 
   numerator_s = lapply(1:length(beta_temp), function(j){
     sintegral(x = x_sintegral,
-              fx = integral_func_psi_mle_mvn(x_sintegral, data_row = data_row, Y = Y,
-                                               varNamesRHS = varNamesRHS, par_vec = par_vec,
-                                               cens_name = cens_name, cov_vars = cov_vars,
-                                               beta_temp = beta_temp, m_func = m_func,
-                                               C_val = data_row[cens_name]  %>% as.numeric(),
-                                               mu_joint = mu_joint, Sigma_joint = Sigma_joint,
-                                               j = j, sigma2 = sigma2))$int
+              fx = if(!is.null(cov_dist_params$model_est_x_z_coeff)){
+                integral_func_psi_mle_aft(x_sintegral, data_row = data_row, Y = Y,
+                                          varNamesRHS = varNamesRHS, par_vec = par_vec,
+                                          cens_name = cens_name, cov_vars = cov_vars,
+                                          beta_temp = beta_temp, m_func = m_func,
+                                          C_val = data_row[cens_name]  %>% as.numeric(),
+                                          model_est_x_z_coeff = cov_dist_params$model_est_x_z_coeff,
+                                          model_est_x_z_sd = cov_dist_params$model_est_x_z_sd,
+                                          j = j, sigma2 = sigma2)
+              }else{
+                integral_func_psi_mle_mvn(x_sintegral, data_row = data_row, Y = Y,
+                                          varNamesRHS = varNamesRHS, par_vec = par_vec,
+                                          cens_name = cens_name, cov_vars = cov_vars,
+                                          beta_temp = beta_temp, m_func = m_func,
+                                          C_val = data_row[cens_name]  %>% as.numeric(),
+                                          mu_joint = cov_dist_params$mu_joint,
+                                          Sigma_joint = cov_dist_params$Sigma_joint,
+                                          j = j, sigma2 = sigma2)
+              })$int
   }) %>% unlist()
 
 
   denominator_s = sintegral(x = x_sintegral,
-                            fx = integral_func_denom_mle_mvn(x_sintegral, data_row = data_row, Y = Y,
-                                                             varNamesRHS = varNamesRHS, par_vec = par_vec,
-                                                             cens_name = cens_name, cov_vars = cov_vars,
-                                                             beta_temp = beta_temp, m_func = m_func,
-                                                             C_val = data_row[cens_name]  %>% as.numeric(),
-                                                             mu_joint = mu_joint, Sigma_joint = Sigma_joint,
-                                                             sigma2 = sigma2))$int
+                            fx = if(!is.null(cov_dist_params$model_est_x_z_coeff)){
+                              integral_func_denom_mle_aft(x_sintegral, data_row = data_row, Y = Y,
+                                                          varNamesRHS = varNamesRHS, par_vec = par_vec,
+                                                          cens_name = cens_name, cov_vars = cov_vars,
+                                                          beta_temp = beta_temp, m_func = m_func,
+                                                          C_val = data_row[cens_name]  %>% as.numeric(),
+                                                          model_est_x_z_coeff = cov_dist_params$model_est_x_z_coeff,
+                                                          model_est_x_z_sd = cov_dist_params$model_est_x_z_sd,
+                                                          sigma2 = sigma2)
+                            }else{
+                              integral_func_denom_mle_mvn(x_sintegral, data_row = data_row, Y = Y,
+                                                          varNamesRHS = varNamesRHS, par_vec = par_vec,
+                                                          cens_name = cens_name, cov_vars = cov_vars,
+                                                          beta_temp = beta_temp, m_func = m_func,
+                                                          C_val = data_row[cens_name]  %>% as.numeric(),
+                                                          mu_joint = cov_dist_params$mu_joint,
+                                                          Sigma_joint = cov_dist_params$Sigma_joint,
+                                                          sigma2 = sigma2)
+                            })$int
+
 
   (numerator_gh-numerator_s)/(denominator_gh-denominator_s)
 }
