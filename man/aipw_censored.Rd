@@ -54,9 +54,9 @@ aipw_censored(
 
 \item{weight_stabilize}{a character string indicating which method of weight stabilization is to be done (if any). One of \code{c("Mean", "KM", "None")}.}
 
-\item{cov_dist_opt}{a character string indicating specification of the covariate distribution. One of "MVN", "user_MVN", "AFT"}
+\item{cov_dist_opt}{a character string indicating specification of the covariate distribution. One of "MVN", "user_MVN", "AFT_lognormal"}
 
-\item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.}
+\item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN", "AFT_lognormal")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.}
 
 \item{cov_mean_user}{if \code{cov_dis_opt = "user_MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.}
 

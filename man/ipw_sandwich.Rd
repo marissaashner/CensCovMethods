@@ -30,7 +30,7 @@ ipw_sandwich(
 
 \item{weights}{a vector of weights for the IPW estimating function}
 
-\item{se_opt}{a character string indicating if the weights are assumed to be known or if they are estimated. One of \code{c("known", "est_MVN")}.}
+\item{se_opt}{a character string indicating if the weights are assumed to be known or if they are estimated when calculating the sandwich standard error estimate. One of \code{c("known", "est_MVN")}.}
 
 \item{cens_name}{a character string indicating the name of censored covariate from \code{data}}
 

@@ -43,9 +43,9 @@ ipw_censored(
 
 \item{weights_threshold}{the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.}
 
-\item{weight_stabilize}{a character string indicating which method of weight stabilization is to be done (if any). One of \code{c("Mean", "KM", "None")}.}
+\item{weight_stabilize}{a character string indicating which method of weight stabilization is to be done (if any). One of \code{c("Mean", "KM", "MVN", "None")}.}
 
-\item{se_opt}{a character string indicating if the weights are assumed to be known or if they are estimated. One of \code{c("known", "est_MVN")}.}
+\item{se_opt}{a character string indicating if the weights are assumed to be known or if they are estimated when calculating the sandwich standard error estimate. One of \code{c("known", "est_MVN")}.}
 }
 \value{
 A list with the following elements:

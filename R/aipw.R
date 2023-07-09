@@ -15,8 +15,8 @@
 #' @param weights_cov if \code{weight_opt} one of \code{c("Cox", "AFT_lognormal", "MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.
 #' @param weights_threshold the maximum weight for any one observation. If \code{NULL} (default), there is no thresholding.
 #' @param weight_stabilize a character string indicating which method of weight stabilization is to be done (if any). One of \code{c("Mean", "KM", "None")}.
-#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user_MVN", "AFT"
-#' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
+#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user_MVN", "AFT_lognormal"
+#' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN", "AFT_lognormal")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
 #' @param cov_mean_user if \code{cov_dis_opt = "user_MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
 #' @param cov_sigma_user if \code{cov_dis_opt = "user_MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
 #' @param gh if \code{TRUE} (default), gauss-hermite quadrature will be run to estimate the integrals. Otherwise, the \code{integrate} function will be used.

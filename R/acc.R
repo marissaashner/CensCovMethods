@@ -12,8 +12,8 @@
 #' @param weight_opt a character string indicating the method of weight calculation. One of "AFT_lognormal", "user" (if "user", then user provides weights).
 #' @param weights_user if \code{weight_opt = "user"}, a vector of weights the same length as there are rows in \code{data}, otherwise \code{NULL} (default).
 #' @param weights_cov if \code{weight_opt = "AFT_lognormal")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the weights model. Otherwise \code{NULL}.
-#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user_MVN", "AFT"
-#' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
+#' @param cov_dist_opt a character string indicating specification of the covariate distribution. One of "MVN", "user_MVN", "AFT_lognormal"
+#' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN", "AFT_lognormal")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
 #' @param cov_mean_user if \code{cov_dis_opt = "user_MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
 #' @param cov_sigma_user if \code{cov_dis_opt = "user_MVN"}, the covariance matrix of the multivariate normal distribution of \code{(log(X), log(C), Z)}.
 #' @param gh if \code{TRUE} (default), gauss-hermite quadrature will be run to estimate the integrals. Otherwise, the \code{integrate} function will be used.
@@ -78,8 +78,6 @@ acc_censored <- function(formula,
   ### and logistic reg?
   if(weight_opt == "user"){
     weights = weights_user
-  }else if(weight_opt == "Cox"){
-    weights = weights_cox(data, cens_ind, weights_cov, cens_name)
   }else if(weight_opt == "AFT_lognormal"){
     weights = weights_aft_acc(data, cens_ind, weights_cov, Y, cens_name)
   }

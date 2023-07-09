@@ -9,8 +9,8 @@
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param starting_vals the starting values for the least squares algorithm. Must be a vector equal in length of the parameter vector
 #' @param sandwich_se if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated
-#' @param cov_dist_opt a character string indicating which method of covariate distribution is to be done. One of "MVN", "user MVN", "AFT"
-#' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}
+#' @param cov_dist_opt a character string indicating which method of covariate distribution is to be done. One of "MVN", "user MVN", "AFT_lognormal"
+#' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN", "AFT_lognormal")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}
 #' @param cov_mean_user if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}
 #' @param cov_sigma_user if \code{cov_dis_opt = "user MVN"}, the covariance matrix of the multivariate normal distributionof \code{(log(X), log(C), Z)}
 #' @param gh if \code{TRUE} (default), gauss-hermite quadrature will be run to estimate the integrals. Otherwise, the \code{integrate} function will be used.
@@ -165,13 +165,10 @@ mle_censored <- function(formula,
 #'
 #' @param formula a linear or nonlinear model formula including variables and parameters
 #' @param data a data frame containing columns for the censoring indicator and the variables in \code{formula}
-#' @param Y a character string indicating the name of the outcome from \code{data}
-#' @param varNamesRHS a vector of character strings indicating the names of the variables on the right side of \code{formula}
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param cens_name a character string indicating the name of censored covariate from \code{data}
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
 #' @param beta_est the estimate from the augmented complete case estimator
-#' @param m_func the mean function of the regression model
 #' @param cens_ind a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored
 #' @param cov_dist_params a list of parameters for the conditional distribution of the censored covariate given the censoring value and fully observed covariates
 #' @param sigma2 the estimate of the error variance
@@ -317,13 +314,10 @@ mle_sandwich <- function(formula, data, par_vec, cens_name, cov_vars,
 #'
 #' @param formula a linear or nonlinear model formula including variables and parameters
 #' @param data a data frame containing columns for the censoring indicator and the variables in \code{formula}
-#' @param Y a character string indicating the name of the outcome from \code{data}
-#' @param varNamesRHS a vector of character strings indicating the names of the variables on the right side of \code{formula}
 #' @param par_vec a character string indicating the parameter vector in the formula
 #' @param cens_name a character string indicating the name of censored covariate from \code{data}
 #' @param cov_vars if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}.
 #' @param beta_est the estimate from the augmented complete case estimator
-#' @param m_func the mean function of the regression model
 #' @param cens_ind a character string indicating the name of censoring indicator from \code{data}, defined to be \code{=1} if observation is uncensored and \code{=0} if observation is censored
 #' @param cov_dist_params a list of parameters for the conditional distribution of the censored covariate given the censoring value and fully observed covariates
 #' @param sigma2 the estimate of the error variance

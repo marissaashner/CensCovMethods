@@ -36,9 +36,9 @@ mle_censored(
 
 \item{sandwich_se}{if \code{TRUE} (default), the empirical sandwich estimator for the standard error is calculated}
 
-\item{cov_dist_opt}{a character string indicating which method of covariate distribution is to be done. One of "MVN", "user MVN", "AFT"}
+\item{cov_dist_opt}{a character string indicating which method of covariate distribution is to be done. One of "MVN", "user MVN", "AFT_lognormal"}
 
-\item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}}
+\item{cov_vars}{if \code{cov_dist_opt} one of \code{c("MVN", "AFT_lognormal")}, a list of character strings indicating the names of the variables from \code{data} to be used as predictors in the covariate distribution Otherwise \code{NULL}}
 
 \item{cov_mean_user}{if \code{cov_dis_opt = "user MVN"}, the mean of the multivariate normal distribution of \code{(log(X), log(C), Z)}}
 

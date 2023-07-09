@@ -37,12 +37,6 @@ mle_sandwich(
 \item{sigma2}{the estimate of the error variance}
 
 \item{cov_dist_opt}{a character string indicating specification of the covariate distribution. One of "MVN", "user MVN", "AFT"}
-
-\item{Y}{a character string indicating the name of the outcome from \code{data}}
-
-\item{varNamesRHS}{a vector of character strings indicating the names of the variables on the right side of \code{formula}}
-
-\item{m_func}{the mean function of the regression model}
 }
 \value{
 A vector of the sandwich standard error estimates.
