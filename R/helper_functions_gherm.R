@@ -201,7 +201,7 @@ psi_hat_i_hermite_mle = function(data_row, Y, varNamesRHS, par_vec, cens_name, c
   }else if(!is.null(cov_dist_params$mu_joint)){
     mu <- cov_dist_params$mu_joint[1] +
       cov_dist_params$Sigma_joint[1, c(2,3)]%*%solve(cov_dist_params$Sigma_joint[c(2,3),c(2,3)])%*%
-      (c(log(data_row[cens_name]) %>% as.numeric(),
+      (c(log(data_row[cens_name] %>% as.numeric()),
          data_row[cov_vars] %>% as.numeric()) - cov_dist_params$mu_joint[c(2,3)])
     sigma <- sqrt(cov_dist_params$Sigma_joint[1,1] -
                     cov_dist_params$Sigma_joint[1,c(2,3)]%*%solve(cov_dist_params$Sigma_joint[c(2,3),c(2,3)])%*%
