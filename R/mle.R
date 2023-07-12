@@ -101,7 +101,7 @@ mle_censored <- function(formula,
   # CC to get estimates for starting values (this can be an option) and sigma2
   model_est_cc = cc_censored(formula, data, cens_ind, par_vec, starting_vals,
                              sandwich_se = FALSE)
-  starting_vals = model_est_cc$beta_est %>% as.numeric()
+#  starting_vals = model_est_cc$beta_est %>% as.numeric()
   sigma2 = model_est_cc$sigma_est^2
 
   if(endsWith(cov_dist_opt,"MVN") & !gh){
